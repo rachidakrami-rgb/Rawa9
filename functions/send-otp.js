@@ -30,7 +30,8 @@
  *                                (مثال: "Rawaa <no-reply@yourdomain.com>").
  *                                إن لم يُضبط يُستعمل "onboarding@resend.dev" (للاختبار فقط،
  *                                يصل فقط لبريد مالك حساب Resend).
- *   OTP_EMAIL_SUBJECT (اختياري) — موضوع الرسالة. افتراضي: "كود التحقق الخاص بك".
+ *   RESEND_TEMPLATE_ID (اختياري) — معرّف قالب "رمز التحقق" على لوحة Resend > Templates.
+ *                                  إن لم يُضبط يُستعمل المعرّف الافتراضي المكتوب في الكود.
  *
  * ── ملاحظة أمنية ──
  *   المفتاح السري RESEND_API_KEY محفوظ حصراً في متغيرات بيئة Cloudflare Pages
@@ -39,8 +40,9 @@
  */
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
-const DEFAULT_FROM = 'onboarding@resend.dev';
-const DEFAULT_SUBJECT = 'كود التحقق الخاص بك';
+const DEFAULT_FROM = 'ميثاق <onboarding@resend.dev>';
+// معرّف قالب "رمز التحقق" المحفوظ والمنشور على لوحة تحكم Resend (Templates)
+const DEFAULT_TEMPLATE_ID = '6f6d13c9-a595-44a7-b22d-c69e653dc3a2';
 
 /** مساعد: يُرجع استجابة JSON موحّدة */
 function jsonResponse(data, status = 200) {
@@ -52,25 +54,6 @@ function jsonResponse(data, status = 200) {
             'Cache-Control': 'no-store'
         }
     });
-}
-
-/** يبني محتوى البريد بصيغة HTML (RTL، بنفس هوية الموقع) */
-function buildOtpHtml(otp) {
-    return ''
-        + '<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;'
-        + 'border:1px solid #eee;border-radius:12px;padding:24px;text-align:center;background:#ffffff">'
-        +   '<h2 style="color:#c8102e;margin:0 0 12px;font-size:20px">كود التحقق</h2>'
-        +   '<p style="color:#444;font-size:15px;margin:0 0 8px">'
-        +     'استعمل الكود التالي لإتمام التحقق من بريدك الإلكتروني:'
-        +   '</p>'
-        +   '<div style="font-size:34px;letter-spacing:8px;font-weight:bold;color:#c8102e;'
-        +     'background:#fafafa;border:1px dashed #ddd;border-radius:8px;padding:14px;margin:16px 0">'
-        +     String(otp)
-        +   '</div>'
-        +   '<p style="color:#888;font-size:12px;margin:0">'
-        +     'الكود صالح لمدة 10 دقائق. إن لم تطلب هذا الكود بنفسك فتجاهل هذه الرسالة.'
-        +   '</p>'
-        + '</div>';
 }
 
 export async function onRequestPost(context) {
@@ -102,9 +85,9 @@ export async function onRequestPost(context) {
     }
 
     const fromAddress = (env && env.RESEND_FROM) || DEFAULT_FROM;
-    const subject = (env && env.OTP_EMAIL_SUBJECT) || DEFAULT_SUBJECT;
+    const templateId = (env && env.RESEND_TEMPLATE_ID) || DEFAULT_TEMPLATE_ID;
 
-    // 4) استدعاء واجهة Resend لإرسال البريد
+    // 4) استدعاء واجهة Resend لإرسال البريد عبر القالب المحفوظ (Templates)
     try {
         const resp = await fetch(RESEND_API_URL, {
             method: 'POST',
@@ -115,8 +98,12 @@ export async function onRequestPost(context) {
             body: JSON.stringify({
                 from: fromAddress,
                 to: email,
-                subject: subject,
-                html: buildOtpHtml(otp)
+                template: {
+                    id: templateId,
+                    variables: {
+                        OTP_CODE: otp
+                    }
+                }
             })
         });
 
