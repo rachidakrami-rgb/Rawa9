@@ -882,6 +882,72 @@
         .chat-input-footer { gap: 0.5rem; }
         .chat-input-footer input { flex: 1; }
 
+        /* ==================== الرسائل الصوتية ==================== */
+        .chat-messages-box { position: relative; }
+        .chat-voice-btn {
+            flex-shrink: 0;
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 1rem;
+            padding: 0;
+            transition: background-color .15s ease, color .15s ease;
+        }
+        .chat-voice-btn.recording {
+            background: #dc3545 !important;
+            color: #fff !important;
+            border-color: #dc3545 !important;
+            animation: voicePulse 1.2s ease-in-out infinite;
+        }
+        @keyframes voicePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5); }
+            50%      { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
+        }
+        .chat-voice-bubble {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            min-width: 200px;
+            max-width: 100%;
+        }
+        .chat-voice-bubble .voice-icon { font-size: 1rem; flex-shrink: 0; }
+        .chat-voice-bubble audio {
+            flex: 1;
+            width: 100%;
+            height: 36px;
+            min-width: 140px;
+        }
+        .chat-voice-bubble .voice-duration {
+            font-size: 0.72rem;
+            opacity: 0.85;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .chat-voice-expired {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            opacity: 0.7;
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+        .chat-voice-expired i { font-size: 1rem; }
+        .chat-voice-uploading {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            opacity: 0.9;
+            font-size: 0.85rem;
+        }
+        .chat-voice-uploading .spinner-border {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.15em;
+        }
+
 /* ===== أنماط تبويبات طلبات الاهتمام (Pills) ===== */
 .requests-pill-nav {
     display: flex;
@@ -1954,6 +2020,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                 </div>
                 <div class="modal-footer chat-input-footer">
                     <input type="text" id="supportChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendSupportChatMessage();}">
+                    <button type="button" class="btn btn-outline-secondary chat-voice-btn" id="supportChatVoiceBtn" onclick="toggleVoiceRecording('support')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
                     <button type="button" class="btn btn-brand" onclick="sendSupportChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -2001,6 +2068,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                 </div>
                 <div class="modal-footer chat-input-footer" id="directChatInputRow">
                     <input type="text" id="directChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendDirectChatMessage();}">
+                    <button type="button" class="btn btn-outline-secondary chat-voice-btn" id="directChatVoiceBtn" onclick="toggleVoiceRecording('direct')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
                     <button type="button" class="btn btn-brand" onclick="sendDirectChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -3136,6 +3204,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             if (!currentUser || currentUser.isAdmin) return;
             activeSupportChatMemberId = currentUser.id;
             ensureAdminChatForMember(currentUser.id);
+            sweepExpiredVoiceMessages();
             renderSupportChatThread();
             new bootstrap.Modal(document.getElementById('supportChatModal')).show();
             markAdminChatSeen(currentUser.id, 'member');
@@ -3146,6 +3215,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             if (!hasPermission('manageMembers')) return;
             activeSupportChatMemberId = memberId;
             ensureAdminChatForMember(memberId);
+            sweepExpiredVoiceMessages();
             renderSupportChatThread();
             new bootstrap.Modal(document.getElementById('supportChatModal')).show();
             markAdminChatSeen(memberId, 'admin');
@@ -3181,13 +3251,21 @@ body.dark-mode .chat-contact-accepted-bubble {
             } else {
                 bodyEl.innerHTML = messages.map(m => {
                     const mine = currentUser.isAdmin ? m.senderRole === 'admin' : m.senderRole === 'member';
+                    // محتوى الفقاعة: رسالة صوتية، أو نص عادي
+                    let contentHtml;
+                    if (m.type === 'voice') {
+                        // الرسائل الصوتية المنتهية صلاحيتها (>24 ساعة) تُعرض كفقاعة باهتة بدلاً من المشغّل
+                        contentHtml = isVoiceExpired(m) ? buildVoiceExpiredHtml() : buildVoiceBubbleHtml(m);
+                    } else {
+                        contentHtml = `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
+                    }
                     return `
                             <div class="chat-bubble-row ${mine ? 'mine' : 'theirs'}">
                                 <div class="chat-bubble ${mine ? 'chat-bubble-mine' : 'chat-bubble-theirs'} ${m.isAlert ? 'chat-bubble-alert' : ''}">
                                     ${m.isAlert ? '<div class="chat-bubble-alert-badge"><i class="fa-solid fa-bell"></i> تنبيه إداري</div>' : ''}
                                     ${m.senderRole === 'admin' && currentUser.isAdmin === false ? '<div class="chat-bubble-sender">الإدارة</div>' : ''}
                                     ${m.senderRole === 'member' && currentUser.isAdmin === true ? `<div class="chat-bubble-sender">${escapeHtml(m.senderName || 'العضو')}</div>` : ''}
-                                    <div class="chat-bubble-text">${escapeHtml(m.text)}</div>
+                                    ${contentHtml}
                                     <div class="chat-bubble-time">${formatDateTimeGlobal(m.timestamp)}</div>
                                 </div>
                             </div>
@@ -3295,6 +3373,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             activeDirectChatId = chat.id;
             activeDirectChatReadOnly = false;
             _lastOpenDirectChatMsgCount = (chat.messages || []).length;
+            sweepExpiredVoiceMessages();
             renderDirectChatThread();
             new bootstrap.Modal(document.getElementById('directChatModal')).show();
         };
@@ -3305,6 +3384,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             activeDirectChatReadOnly = true;
             const chat = getDirectChats().find(c => c.id === chatId);
             _lastOpenDirectChatMsgCount = chat ? (chat.messages || []).length : null;
+            sweepExpiredVoiceMessages();
             renderDirectChatThread();
             new bootstrap.Modal(document.getElementById('directChatModal')).show();
         };
@@ -3329,13 +3409,17 @@ body.dark-mode .chat-contact-accepted-bubble {
 
             const isLocked = hasReportBetween(chat.userAId, chat.userBId) || hasCutoffBetween(chat.userAId, chat.userBId);
             const req = chat.requestId ? getRequests().find(r => r.id === chat.requestId) : null;
+            // الإدارة تتصفّح المحادثات المباشرة للقراءة فقط: نُخفي صف الإدخال وزر الصوت معاً
+            const isAdminReadOnly = currentUser.isAdmin;
+            const directVoiceBtn = document.getElementById('directChatVoiceBtn');
 
-            if (isLocked) {
-                lockedNotice.classList.remove('d-none');
+            lockedNotice.classList.toggle('d-none', !isLocked);
+            if (isLocked || isAdminReadOnly) {
                 inputRow.classList.add('d-none');
+                if (directVoiceBtn) directVoiceBtn.classList.add('d-none');
             } else {
-                lockedNotice.classList.add('d-none');
                 inputRow.classList.remove('d-none');
+                if (directVoiceBtn) directVoiceBtn.classList.remove('d-none');
             }
 
             const messages = chat.messages || [];
@@ -3367,7 +3451,15 @@ body.dark-mode .chat-contact-accepted-bubble {
                     const sender = allUsers.find(u => u.id === m.senderId);
                     const senderName = sender ? sender.profileNumber : '؟';
                     const timeStr = formatDateTimeGlobal(m.timestamp);
-                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}"><div class="chat-bubble-sender">${escapeHtml(senderName)}</div><div class="chat-bubble-text">${escapeHtml(m.text)}</div><div class="chat-bubble-time">${timeStr}</div></div></div>`;
+                    // محتوى الفقاعة: رسالة صوتية، أو نص عادي
+                    let contentHtml;
+                    if (m.type === 'voice') {
+                        // الرسائل الصوتية المنتهية صلاحيتها (>24 ساعة) تُعرض كفقاعة باهتة بدلاً من المشغّل
+                        contentHtml = isVoiceExpired(m) ? buildVoiceExpiredHtml() : buildVoiceBubbleHtml(m);
+                    } else {
+                        contentHtml = `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
+                    }
+                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}"><div class="chat-bubble-sender">${escapeHtml(senderName)}</div>${contentHtml}<div class="chat-bubble-time">${timeStr}</div></div></div>`;
                 }).join('');
             }
             bodyEl.scrollTop = bodyEl.scrollHeight;
@@ -3756,6 +3848,13 @@ body.dark-mode .chat-contact-accepted-bubble {
             if (firestoreReady.users && firestoreReady.requests && firestoreReady.passwordRequests && firestoreReady.reports && firestoreReady.cutoffs && firestoreReady.adminChats && firestoreReady.directChats) {
                 hideFirebaseLoadingOverlay();
                 applyDarkModePreference();
+                // تنقيح الرسائل الصوتية المنتهية صلاحيتها (>24 ساعة) مرة واحدة عند الجاهزية،
+                // ثم كل 30 دقيقة بشكل دوري. الحذف من فايرستور + Cloudinary (بأفضل جهد).
+                if (!_voiceSweepStarted) {
+                    _voiceSweepStarted = true;
+                    sweepExpiredVoiceMessages();
+                    setInterval(sweepExpiredVoiceMessages, 30 * 60 * 1000);
+                }
                 if (!sessionRestoreAttempted) {
                     sessionRestoreAttempted = true;
                     restoreSession();
@@ -5483,6 +5582,390 @@ body.dark-mode .chat-contact-accepted-bubble {
             }
         }
 
+        // ==================== الرسائل الصوتية في الدردشة ====================
+        // مدة صلاحية الرسالة الصوتية: 24 ساعة. بعدها تُحذف تلقائياً من فايرستور ومن
+        // Cloudinary لتجنب استهلاك مساحة التخزين. الحذف "بأفضل جهد": فشل حذف الملف
+        // من Cloudinary لا يوقف المنظومة.
+        const VOICE_TTL_MS = 24 * 60 * 60 * 1000;
+        const CLOUDINARY_VOICE_PRESET = 'Rawa9voice';
+
+        // حالة التسجيل الحالية (مشتركة بين دردشة الدعم والمحادثة المباشرة — تسجيل واحد في كل مرة)
+        let _voiceRec = null;          // MediaRecorder instance
+        let _voiceChunks = [];         // أجزاء البيانات الصوتية المجمّعة
+        let _voiceRecStream = null;    // MediaStream من getUserMedia
+        let _voiceRecContext = null;   // 'support' أو 'direct'
+        let _voiceRecTimer = null;     // مقبض setInterval لعرض المؤقّت
+        let _voiceRecStartTime = 0;    // Date.now() عند بدء التسجيل
+        let _voiceIsUploading = false; // حماية ضد الإرسال المزدوج
+
+        // يحدد ما إذا كانت رسالة صوتية قد تجاوزت مدة الصلاحية (24 ساعة)
+        function isVoiceExpired(msg) {
+            if (!msg || !msg.timestamp) return true;
+            try {
+                const ts = new Date(msg.timestamp).getTime();
+                if (isNaN(ts)) return true;
+                return (Date.now() - ts) > VOICE_TTL_MS;
+            } catch (_) {
+                return true;
+            }
+        }
+
+        // فقاعة "انتهت صلاحية هذه الرسالة الصوتية" تُعرض مكان المشغّل للرسائل المنتهية
+        function buildVoiceExpiredHtml() {
+            return `<div class="chat-voice-expired"><i class="fa-solid fa-clock"></i> انتهت صلاحية هذه الرسالة الصوتية</div>`;
+        }
+
+        // فقاعة "جاري الرفع" تُعرض مؤقتاً أثناء رفع التسجيل إلى Cloudinary
+        function buildVoiceUploadingHtml() {
+            return `<div class="chat-voice-uploading"><div class="spinner-border" role="status"></div> جاري إرسال الرسالة الصوتية...</div>`;
+        }
+
+        // يبني HTML لفقاعة رسالة صوتية مع مشغّل صوتي ومدة التسجيل
+        function buildVoiceBubbleHtml(m) {
+            const url = escapeHtml(m.voiceUrl || '');
+            const durStr = formatVoiceDuration(m.voiceDuration || 0);
+            return `
+                <div class="chat-voice-bubble">
+                    <i class="fa-solid fa-microphone voice-icon"></i>
+                    <audio controls preload="metadata" src="${url}"></audio>
+                    <span class="voice-duration">${durStr}</span>
+                </div>
+            `;
+        }
+
+        // تنسيق المدة بصيغة M:SS
+        function formatVoiceDuration(seconds) {
+            const s = Math.max(0, Math.floor(Number(seconds) || 0));
+            const m = Math.floor(s / 60);
+            const r = s % 60;
+            return `${m}:${String(r).padStart(2, '0')}`;
+        }
+
+        // تبديل حالة التسجيل: يبدأ التسجيل إن كان متوقفاً، ويُوقفه (ويُرسل) إن كان جارياً
+        window.toggleVoiceRecording = function(context) {
+            if (_voiceRec && _voiceRec.state === 'recording') {
+                stopVoiceRecording();
+            } else {
+                startVoiceRecording(context);
+            }
+        };
+
+        // يبدأ تسجيل رسالة صوتية باستخدام MediaRecorder API
+        async function startVoiceRecording(context) {
+            _voiceRecContext = context;
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showAlert('متصفحك لا يدعم تسجيل الرسائل الصوتية.', 'danger');
+                return;
+            }
+            // منع الإدارة من إرسال رسائل صوتية في المحادثة المباشرة (للقراءة فقط)
+            if (context === 'direct' && currentUser && currentUser.isAdmin) {
+                showAlert('الإدارة لا يمكنها إرسال رسائل صوتية في المحادثات المباشرة.', 'warning');
+                return;
+            }
+            // التحقق من أن المحادثة المباشرة غير مقفولة (إبلاغ أو قطع تواصل)
+            if (context === 'direct' && activeDirectChatId !== null) {
+                const chat = getDirectChats().find(c => c.id === activeDirectChatId);
+                if (chat && (hasReportBetween(chat.userAId, chat.userBId) || hasCutoffBetween(chat.userAId, chat.userBId))) {
+                    showAlert('لا يمكن إرسال رسائل صوتية، تم إيقاف التواصل بين الطرفين.', 'danger');
+                    return;
+                }
+            }
+            try {
+                _voiceRecStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (e) {
+                showAlert('تعذّر الوصول إلى الميكروفون. يرجى السماح للموقع باستخدام الميكروفون.', 'danger');
+                return;
+            }
+            _voiceChunks = [];
+            // اختيار أفضل صيغة مدعومة (webm/opus أولاً، ثم ogg، ثم mp4، ثم الافتراضي)
+            let mimeType = '';
+            const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+            for (const c of candidates) {
+                if (window.MediaRecorder && MediaRecorder.isTypeSupported(c)) { mimeType = c; break; }
+            }
+            try {
+                _voiceRec = mimeType ? new MediaRecorder(_voiceRecStream, { mimeType }) : new MediaRecorder(_voiceRecStream);
+            } catch (e) {
+                showAlert('تعذّر بدء التسجيل الصوتي.', 'danger');
+                stopVoiceStream();
+                return;
+            }
+            _voiceRec.ondataavailable = function(e) {
+                if (e.data && e.data.size > 0) _voiceChunks.push(e.data);
+            };
+            _voiceRec.onstop = function() {
+                handleVoiceRecordingStop();
+            };
+            _voiceRec.start();
+            _voiceRecStartTime = Date.now();
+            updateVoiceButtonState();
+            // مؤقّت لعرض مدة التسجيل الحالية على الزر
+            _voiceRecTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - _voiceRecStartTime) / 1000);
+                const btn = document.getElementById(_voiceRecContext === 'support' ? 'supportChatVoiceBtn' : 'directChatVoiceBtn');
+                if (btn) {
+                    btn.innerHTML = `<span style="font-size:0.72rem;font-weight:700;">${formatVoiceDuration(elapsed)}</span>`;
+                }
+            }, 500);
+        }
+
+        // يوقف التسجيل ويُطلق عملية الرفع والإرسال
+        function stopVoiceRecording() {
+            if (_voiceRec && _voiceRec.state === 'recording') {
+                try { _voiceRec.stop(); } catch (_) {}
+            }
+            if (_voiceRecTimer) { clearInterval(_voiceRecTimer); _voiceRecTimer = null; }
+            stopVoiceStream();
+        }
+
+        // يُلغي التسجيل الحالي دون إرسال (يُستدعى عند إغلاق النافذة مثلاً)
+        function cancelVoiceRecording() {
+            if (_voiceRec && _voiceRec.state === 'recording') {
+                _voiceRec.onstop = null; // منع الرفع
+                try { _voiceRec.stop(); } catch (_) {}
+            }
+            if (_voiceRecTimer) { clearInterval(_voiceRecTimer); _voiceRecTimer = null; }
+            stopVoiceStream();
+            _voiceChunks = [];
+            _voiceRec = null;
+            _voiceRecContext = null;
+            updateVoiceButtonState();
+        }
+
+        // يُغلق تيار الميكروفون
+        function stopVoiceStream() {
+            if (_voiceRecStream) {
+                _voiceRecStream.getTracks().forEach(t => t.stop());
+                _voiceRecStream = null;
+            }
+        }
+
+        // يُحدّث شكل زر التسجيل حسب الحالة (عادي / يسجّل)
+        function updateVoiceButtonState() {
+            const isRec = _voiceRec && _voiceRec.state === 'recording';
+            const ids = ['supportChatVoiceBtn', 'directChatVoiceBtn'];
+            ids.forEach(id => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                if (isRec && id === (_voiceRecContext === 'support' ? 'supportChatVoiceBtn' : 'directChatVoiceBtn')) {
+                    btn.classList.add('recording');
+                    btn.innerHTML = `<i class="fa-solid fa-stop"></i>`;
+                } else {
+                    btn.classList.remove('recording');
+                    btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
+                }
+            });
+        }
+
+        // يُعالج نهاية التسجيل: يبني الـ Blob، يرفعه إلى Cloudinary، ثم يُرسله كرسالة
+        async function handleVoiceRecordingStop() {
+            if (_voiceChunks.length === 0) {
+                updateVoiceButtonState();
+                return;
+            }
+            const durationSec = Math.max(1, Math.round((Date.now() - _voiceRecStartTime) / 1000));
+            const mimeType = (_voiceRec && _voiceRec.mimeType) || 'audio/webm';
+            const blob = new Blob(_voiceChunks, { type: mimeType });
+            _voiceChunks = [];
+            const ctx = _voiceRecContext;
+            _voiceRec = null;
+            _voiceRecContext = null;
+            updateVoiceButtonState();
+            if (_voiceIsUploading) return;
+            _voiceIsUploading = true;
+            // عرض فقاعة "جاري الرفع" مؤقتاً في المحادثة
+            showVoiceUploadingBubble(ctx);
+            try {
+                const url = await uploadVoiceToCloudinary(blob);
+                if (!url) {
+                    showAlert('تعذّر رفع الرسالة الصوتية. حاول مرة أخرى.', 'danger');
+                    removeVoiceUploadingBubble(ctx);
+                    return;
+                }
+                await sendVoiceMessage(ctx, url, durationSec);
+                removeVoiceUploadingBubble(ctx);
+            } catch (e) {
+                console.error('voice upload/send error:', e);
+                showAlert('حدث خطأ أثناء إرسال الرسالة الصوتية.', 'danger');
+                removeVoiceUploadingBubble(ctx);
+            } finally {
+                _voiceIsUploading = false;
+            }
+        }
+
+        // يرفع ملفاً صوتياً إلى Cloudinary عبر preset غير موقّع (Rawa9voice) ويعيد secure_url
+        function uploadVoiceToCloudinary(blob) {
+            return new Promise((resolve) => {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', blob);
+                    formData.append('upload_preset', CLOUDINARY_VOICE_PRESET);
+                    formData.append('folder', 'voice_messages');
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, true);
+                    xhr.onload = function() {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const resp = JSON.parse(xhr.responseText);
+                                resolve(resp.secure_url || null);
+                            } catch (_) { resolve(null); }
+                        } else { resolve(null); }
+                    };
+                    xhr.onerror = function() { resolve(null); };
+                    xhr.send(formData);
+                } catch (e) { resolve(null); }
+            });
+        }
+
+        // يُضيف رسالة صوتية إلى المحادثة المناسبة (دعم أو مباشرة) ويحفظها في فايرستور
+        function sendVoiceMessage(context, voiceUrl, durationSec) {
+            if (!currentUser) return;
+            const ts = new Date().toISOString();
+            if (context === 'support') {
+                if (activeSupportChatMemberId === null) return;
+                const chats = getAdminChats();
+                const chat = chats.find(c => c.memberId === activeSupportChatMemberId) ||
+                    (() => { const c = { id: chats.length > 0 ? Math.max(...chats.map(x => x.id)) + 1 : 1,
+                            memberId: activeSupportChatMemberId, messages: [] };
+                        chats.push(c); return c; })();
+                chat.messages.push({
+                    senderRole: currentUser.isAdmin ? 'admin' : 'member',
+                    senderId: currentUser.id,
+                    senderName: currentUser.fullName,
+                    text: '',
+                    type: 'voice',
+                    voiceUrl: voiceUrl,
+                    voiceDuration: durationSec,
+                    timestamp: ts,
+                    seenByAdmin: currentUser.isAdmin ? true : false,
+                    seenByMember: currentUser.isAdmin ? false : true
+                });
+                saveAdminChats(chats);
+                renderSupportChatThread();
+                if (currentUser.isAdmin) sendPushToUser(activeSupportChatMemberId, '🎤 رسالة صوتية جديدة', 'لديك رسالة صوتية جديدة في محادثة الدعم', { type: 'supportChat', url: './index.html' });
+                else sendPushToAdmins('🎤 رسالة صوتية جديدة', 'رسالة صوتية جديدة من ' + (currentUser.fullName || ''), { type: 'supportChat', url: './index.html' });
+            } else if (context === 'direct') {
+                if (activeDirectChatId === null || currentUser.isAdmin) return;
+                const chats = getDirectChats();
+                const chat = chats.find(c => c.id === activeDirectChatId);
+                if (!chat) return;
+                if (hasReportBetween(chat.userAId, chat.userBId) || hasCutoffBetween(chat.userAId, chat.userBId)) {
+                    showAlert('لا يمكن إرسال رسائل صوتية، تم إيقاف التواصل بين الطرفين.', 'danger');
+                    return;
+                }
+                chat.messages.push({
+                    senderId: currentUser.id,
+                    text: '',
+                    type: 'voice',
+                    voiceUrl: voiceUrl,
+                    voiceDuration: durationSec,
+                    timestamp: ts
+                });
+                if (chat.messages.length > 50) chat.messages = chat.messages.slice(-50);
+                saveDirectChats(chats);
+                renderDirectChatThread();
+                const otherId = chat.userAId === currentUser.id ? chat.userBId : chat.userAId;
+                sendPushToUser(otherId, '🎤 رسالة صوتية جديدة', 'رسالة صوتية جديدة من ' + (currentUser.profileNumber || currentUser.fullName), { type: 'directChat', url: './index.html' });
+            }
+        }
+
+        // يُعرض فقاعة "جاري الرفع" مؤقتاً أسفل رسائل المحادثة أثناء الرفع
+        function showVoiceUploadingBubble(context) {
+            const bodyId = context === 'support' ? 'supportChatMessages' : 'directChatMessages';
+            const body = document.getElementById(bodyId);
+            if (!body) return;
+            let ph = document.getElementById('_voiceUploadingPlaceholder');
+            if (!ph) {
+                ph = document.createElement('div');
+                ph.id = '_voiceUploadingPlaceholder';
+                ph.className = 'chat-bubble-row mine';
+                ph.innerHTML = `<div class="chat-bubble chat-bubble-mine">${buildVoiceUploadingHtml()}</div>`;
+                body.appendChild(ph);
+                body.scrollTop = body.scrollHeight;
+            }
+        }
+
+        // يُزيل فقاعة "جاري الرفع" المؤقتة
+        function removeVoiceUploadingBubble(context) {
+            const ph = document.getElementById('_voiceUploadingPlaceholder');
+            if (ph) ph.remove();
+        }
+
+        // يرسل طلب حذف ملفّات صوتية منتهية الصلاحية إلى نقطة /delete-voice (Cloudflare
+        // Pages Function) التي تستعمل توقيع Cloudinary الموقّع لمسح الملفّات. الحذف
+        // "بأفضل جهد": الفشل لا يوقف المنظومة.
+        async function deleteVoiceAssetsFromCloudinary(urls) {
+            if (!urls || urls.length === 0) return;
+            try {
+                await fetch('/delete-voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls: urls })
+                });
+            } catch (e) {
+                // تجاهل: الحذف بأفضل جهد
+                console.warn('delete-voice fetch failed:', e);
+            }
+        }
+
+        // يُنقّي الرسائل الصوتية المنتهية صلاحيتها (>24 ساعة) من محادثات الإدارة والمباشرة.
+        // يزيلها من الكاش المحلي ويحفظ في فايرستور، ثم يطلب حذف ملفّاتها من Cloudinary.
+        // يُستدعى مرة واحدة عند الجاهزية + كل 30 دقيقة + عند فتح أي محادثة.
+        let _voiceSweepRunning = false;
+        let _voiceSweepStarted = false;
+        function sweepExpiredVoiceMessages() {
+            if (_voiceSweepRunning) return;
+            _voiceSweepRunning = true;
+            try {
+                const toDeleteUrls = [];
+                // محادثات الإدارة (الدعم)
+                const adminChats = getAdminChats();
+                let adminChanged = false;
+                adminChats.forEach(c => {
+                    const before = (c.messages || []).length;
+                    c.messages = (c.messages || []).filter(m => {
+                        if (m && m.type === 'voice' && isVoiceExpired(m)) {
+                            if (m.voiceUrl) toDeleteUrls.push(m.voiceUrl);
+                            return false; // احذف من الكاش
+                        }
+                        return true;
+                    });
+                    if (c.messages.length !== before) adminChanged = true;
+                });
+                if (adminChanged) saveAdminChats(adminChats);
+                // المحادثات المباشرة
+                const directChats = getDirectChats();
+                let directChanged = false;
+                directChats.forEach(c => {
+                    const before = (c.messages || []).length;
+                    c.messages = (c.messages || []).filter(m => {
+                        if (m && m.type === 'voice' && isVoiceExpired(m)) {
+                            if (m.voiceUrl) toDeleteUrls.push(m.voiceUrl);
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (c.messages.length !== before) directChanged = true;
+                });
+                if (directChanged) saveDirectChats(directChats);
+                // إعادة عرض المحادثة المفتوحة إن تأثّرت
+                if (adminChanged && activeSupportChatMemberId !== null && isModalOpen('supportChatModal')) {
+                    renderSupportChatThread();
+                }
+                if (directChanged && activeDirectChatId !== null && isModalOpen('directChatModal')) {
+                    renderDirectChatThread();
+                }
+                // حذف الملفّات من Cloudinary (بأفضل جهد)
+                if (toDeleteUrls.length > 0) {
+                    deleteVoiceAssetsFromCloudinary(toDeleteUrls);
+                }
+            } catch (e) {
+                console.warn('voice sweep error:', e);
+            } finally {
+                _voiceSweepRunning = false;
+            }
+        }
+
         function getNotifSeenSet() {
             if (!currentUser) return new Set();
             try {
@@ -5493,9 +5976,18 @@ body.dark-mode .chat-contact-accepted-bubble {
 
         function markNotifSeen(key) {
             if (!currentUser) return;
-            const set = getNotifSeenSet();
-            set.add(key);
-            localStorage.setItem('rawaaNotifSeen_' + currentUser.id, JSON.stringify(Array.from(set)));
+            const seen = getNotifSeenSet();
+            seen.add(key);
+            localStorage.setItem('rawaaNotifSeen_' + currentUser.id, JSON.stringify(Array.from(seen)));
+            // إخفاء الإشعار فوراً ومنع تجديده عند تسجيل الدخول لاحقاً: نُضيف المفتاح إلى
+            // مجموعة "الممسوحة" أيضاً، فلا يُعاد بناؤه في القائمة حتى لو بقي الحدث الأصلي
+            // (طلب عضوية معلّق، رسالة غير مقروءة في فايرستور...) قائماً. الإشعارات الجديدة
+            // فعلاً (بمفتاح مختلف — رسالة جديدة، طلب جديد...) ستظهر طبيعياً تحت مفتاح جديد.
+            const cleared = getNotifClearedSet();
+            if (!cleared.has(key)) {
+                cleared.add(key);
+                saveNotifClearedSet(cleared);
+            }
         }
 
         // ==================== تنظيف الإشعارات القديمة المقروءة ====================
@@ -7409,9 +7901,12 @@ body.dark-mode .chat-contact-accepted-bubble {
 
 
         document.getElementById('supportChatModal').addEventListener('hidden.bs.modal', function() {
+            // إلغاء أي تسجيل صوتي جارٍ عند إغلاق نافذة الدردشة (تفاديًا لبقاء الميكروفون مفتوحًا)
+            cancelVoiceRecording();
             activeSupportChatMemberId = null;
         });
         document.getElementById('directChatModal').addEventListener('hidden.bs.modal', function() {
+            cancelVoiceRecording();
             activeDirectChatId = null;
             activeDirectChatReadOnly = false;
             _lastOpenDirectChatMsgCount = null;
