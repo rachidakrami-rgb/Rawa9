@@ -2041,16 +2041,18 @@ body.dark-mode .chat-contact-accepted-bubble {
             emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
         }
 
-        // ==================== إرسال أكواد التحقق (OTP) عبر Resend ====================
-        // دالة مشتركة تُستعمل في ثلاث حالات فقط:
+        // ==================== إرسال أكواد التحقق (OTP) عبر الخادم ====================
+        // دالة محايدة تجاه المزوّد: العميل يبعث فقط POST /send-otp ولا يهمه إن كان Brevo
+        // أو غيره خلف الكواليس. هذا يجعل أي تبديل للمزوّد لاحقاً صفر تعديل في الواجهة.
+        // تُستعمل في ثلاث حالات فقط:
         //   1) تأكيد البريد عند تسجيل عضو جديد (sendRegistrationVerificationCode)
         //   2) تأكيد تغيير بريد العضو من الملف الشخصي (sendProfileEmailVerificationCode)
         //   3) تأكيد تغيير بريد المسؤول (sendAdminProfileEmailVerificationCode)
         // تُرسل الكود عبر نقطة النهاية /send-otp (Cloudflare Pages Function في functions/send-otp.js)
-        // التي تستخدم Resend داخلياً، والمفتاح السري RESEND_API_KEY محفوظ في متغيرات بيئة
+        // التي تستخدم Brevo داخلياً، والمفتاح السري BREVO_API_KEY محفوظ في متغيرات بيئة
         // Cloudflare Pages (وليس في الكود).
         // ملاحظة: إعادة تعيين كلمة المرور تبقى على EmailJS كما هي ولا تمر من هنا.
-        function sendOtpViaResend(email, code) {
+        function sendOtpEmail(email, code) {
             return fetch('/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2059,10 +2061,10 @@ body.dark-mode .chat-contact-accepted-bubble {
                 if (!resp.ok) {
                     // نحاول قراءة نص الخطأ من الخادم إن أمكن لتشخيص المشكلة
                     return resp.text().then(function (txt) {
-                        throw new Error('RESEND_FAILED_' + resp.status + (txt ? (': ' + txt) : ''));
+                        throw new Error('OTP_FAILED_' + resp.status + (txt ? (': ' + txt) : ''));
                     });
                 }
-                // الخادم يُرجع JSON {ok:true, id:...}؛ إن تعذّر التحليل نُرجع كائناً افتراضياً
+                // الخادم يُرجع JSON {ok:true, messageId:...}؛ إن تعذّر التحليل نُرجع كائناً افتراضياً
                 return resp.json().catch(function () { return { ok: true }; });
             });
         }
@@ -2865,14 +2867,14 @@ body.dark-mode .chat-contact-accepted-bubble {
             status.textContent = 'جارٍ إرسال الكود...';
             status.className = 'form-text text-muted';
 
-            // الإرسال عبر Resend (Cloudflare Pages Function /send-otp) بدل EmailJS
-            sendOtpViaResend(email, code).then(() => {
+            // الإرسال عبر الخادم (Cloudflare Pages Function /send-otp) بدل EmailJS
+            sendOtpEmail(email, code).then(() => {
                 document.getElementById('reg-email-verify-row').classList.remove('d-none');
                 status.textContent = 'تم إرسال كود التحقق إلى بريدك، يرجى إدخاله أدناه (صالح لمدة 10 دقائق).';
                 status.className = 'form-text text-success';
                 startRegResendCooldown();
             }).catch(err => {
-                console.error('Resend OTP error:', err);
+                console.error('OTP error:', err);
                 status.textContent = 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
                 status.className = 'form-text text-danger';
                 sendBtn.disabled = false;
@@ -2964,15 +2966,15 @@ body.dark-mode .chat-contact-accepted-bubble {
             status.textContent = 'جارٍ إرسال الكود...';
             status.className = 'form-text text-muted';
 
-            // الإرسال عبر Resend (Cloudflare Pages Function /send-otp) بدل EmailJS
-            sendOtpViaResend(email, code)
+            // الإرسال عبر الخادم (Cloudflare Pages Function /send-otp) بدل EmailJS
+            sendOtpEmail(email, code)
                 .then(() => {
                     document.getElementById('profile-email-verify-row').classList.remove('d-none');
                     status.textContent = 'تم إرسال كود التحقق إلى بريدك، يرجى إدخاله أدناه (صالح لمدة 10 دقائق).';
                     status.className = 'form-text text-success';
                     startProfileResendCooldown();
                 }).catch(err => {
-                    console.error('Resend OTP error:', err);
+                    console.error('OTP error:', err);
                     status.textContent = 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
                     status.className = 'form-text text-danger';
                     sendBtn.disabled = false;
@@ -3070,15 +3072,15 @@ body.dark-mode .chat-contact-accepted-bubble {
             status.textContent = 'جارٍ إرسال الكود...';
             status.className = 'form-text text-muted';
 
-            // الإرسال عبر Resend (Cloudflare Pages Function /send-otp) بدل EmailJS
-            sendOtpViaResend(email, code)
+            // الإرسال عبر الخادم (Cloudflare Pages Function /send-otp) بدل EmailJS
+            sendOtpEmail(email, code)
                 .then(() => {
                     document.getElementById('admin-profile-email-verify-row').classList.remove('d-none');
                     status.textContent = 'تم إرسال كود التحقق إلى بريدك، يرجى إدخاله أدناه (صالح لمدة 10 دقائق).';
                     status.className = 'form-text text-success';
                     startAdminProfileResendCooldown();
                 }).catch(err => {
-                    console.error('Resend OTP error:', err);
+                    console.error('OTP error:', err);
                     status.textContent = 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
                     status.className = 'form-text text-danger';
                     sendBtn.disabled = false;
