@@ -40,7 +40,7 @@
  */
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
-const DEFAULT_FROM = 'noreply@meetha9.pages.dev';
+const DEFAULT_FROM = 'ميثاق <onboarding@resend.dev>';
 // معرّف قالب "رمز التحقق" المحفوظ والمنشور على لوحة تحكم Resend (Templates)
 const DEFAULT_TEMPLATE_ID = '6f6d13c9-a595-44a7-b22d-c69e653dc3a2';
 
