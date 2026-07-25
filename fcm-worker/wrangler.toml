@@ -1,0 +1,9 @@
+name = "fcm-meetha9"
+main = "index.js"
+compatibility_date = "2026-07-24"
+
+#   wrangler secret put FCM_SERVER_KEY
+#   wrangler secret put API_KEY          (اختياري)
+
+[vars]
+ENVIRONMENT = "production"

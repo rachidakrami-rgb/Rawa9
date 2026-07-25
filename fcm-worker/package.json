@@ -1,0 +1,11 @@
+{
+    "name": "fcm-worker",
+    "version": "1.0.0",
+    "description": "FCM Push Notification Relay Worker for Rawa9",
+    "scripts": {
+        "dev": "bun index.js",
+        "start": "bun index.js"
+    },
+    "dependencies": {},
+    "devDependencies": {}
+}
