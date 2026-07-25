@@ -2041,6 +2041,32 @@ body.dark-mode .chat-contact-accepted-bubble {
             emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
         }
 
+        // ==================== إرسال أكواد التحقق (OTP) عبر Resend ====================
+        // دالة مشتركة تُستعمل في ثلاث حالات فقط:
+        //   1) تأكيد البريد عند تسجيل عضو جديد (sendRegistrationVerificationCode)
+        //   2) تأكيد تغيير بريد العضو من الملف الشخصي (sendProfileEmailVerificationCode)
+        //   3) تأكيد تغيير بريد المسؤول (sendAdminProfileEmailVerificationCode)
+        // تُرسل الكود عبر نقطة النهاية /send-otp (Cloudflare Pages Function في functions/send-otp.js)
+        // التي تستخدم Resend داخلياً، والمفتاح السري RESEND_API_KEY محفوظ في متغيرات بيئة
+        // Cloudflare Pages (وليس في الكود).
+        // ملاحظة: إعادة تعيين كلمة المرور تبقى على EmailJS كما هي ولا تمر من هنا.
+        function sendOtpViaResend(email, code) {
+            return fetch('/send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, otp: String(code) })
+            }).then(function (resp) {
+                if (!resp.ok) {
+                    // نحاول قراءة نص الخطأ من الخادم إن أمكن لتشخيص المشكلة
+                    return resp.text().then(function (txt) {
+                        throw new Error('RESEND_FAILED_' + resp.status + (txt ? (': ' + txt) : ''));
+                    });
+                }
+                // الخادم يُرجع JSON {ok:true, id:...}؛ إن تعذّر التحليل نُرجع كائناً افتراضياً
+                return resp.json().catch(function () { return { ok: true }; });
+            });
+        }
+
         // ==================== إعداد إشعارات الدفع (Push Notifications / FCM) ====================
         // مفتاح VAPID — Firebase Console > Cloud Messaging > Web Push certificates
         const FCM_VAPID_KEY = 'BL1M47JUwyTsetjiEzAWDv6oJaD2uFe1oJOzRWfKFQDvwY7xtQxtzBn9nHlGUC0aHTh2v6is2JP9VOU7PZAoMPE';
@@ -2824,11 +2850,6 @@ body.dark-mode .chat-contact-accepted-bubble {
                 status.className = 'form-text text-danger';
                 return;
             }
-            if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
-                status.textContent = 'خدمة إرسال البريد غير مُهيّأة بعد من طرف الإدارة.';
-                status.className = 'form-text text-danger';
-                return;
-            }
             const existing = getUsers().some(u => (u.email || '').toLowerCase() === email.toLowerCase());
             if (existing) {
                 status.textContent = 'هذا البريد الإلكتروني مسجل بالفعل بحساب آخر.';
@@ -2844,13 +2865,14 @@ body.dark-mode .chat-contact-accepted-bubble {
             status.textContent = 'جارٍ إرسال الكود...';
             status.className = 'form-text text-muted';
 
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, code: code }).then(() => {
+            // الإرسال عبر Resend (Cloudflare Pages Function /send-otp) بدل EmailJS
+            sendOtpViaResend(email, code).then(() => {
                 document.getElementById('reg-email-verify-row').classList.remove('d-none');
                 status.textContent = 'تم إرسال كود التحقق إلى بريدك، يرجى إدخاله أدناه (صالح لمدة 10 دقائق).';
                 status.className = 'form-text text-success';
                 startRegResendCooldown();
             }).catch(err => {
-                console.error('EmailJS error:', err);
+                console.error('Resend OTP error:', err);
                 status.textContent = 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
                 status.className = 'form-text text-danger';
                 sendBtn.disabled = false;
@@ -2926,11 +2948,6 @@ body.dark-mode .chat-contact-accepted-bubble {
                 status.className = 'form-text text-danger';
                 return;
             }
-            if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
-                status.textContent = 'خدمة إرسال البريد غير مُهيّأة بعد من طرف الإدارة.';
-                status.className = 'form-text text-danger';
-                return;
-            }
             const existing = getUsers().some(u => u.id !== currentUser.id && (u.email || '').toLowerCase() === email
                 .toLowerCase());
             if (existing) {
@@ -2947,14 +2964,15 @@ body.dark-mode .chat-contact-accepted-bubble {
             status.textContent = 'جارٍ إرسال الكود...';
             status.className = 'form-text text-muted';
 
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, code: code })
+            // الإرسال عبر Resend (Cloudflare Pages Function /send-otp) بدل EmailJS
+            sendOtpViaResend(email, code)
                 .then(() => {
                     document.getElementById('profile-email-verify-row').classList.remove('d-none');
                     status.textContent = 'تم إرسال كود التحقق إلى بريدك، يرجى إدخاله أدناه (صالح لمدة 10 دقائق).';
                     status.className = 'form-text text-success';
                     startProfileResendCooldown();
                 }).catch(err => {
-                    console.error('EmailJS error:', err);
+                    console.error('Resend OTP error:', err);
                     status.textContent = 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
                     status.className = 'form-text text-danger';
                     sendBtn.disabled = false;
@@ -3036,11 +3054,6 @@ body.dark-mode .chat-contact-accepted-bubble {
                 status.className = 'form-text text-danger';
                 return;
             }
-            if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
-                status.textContent = 'خدمة إرسال البريد غير مُهيّأة بعد.';
-                status.className = 'form-text text-danger';
-                return;
-            }
             const existing = getUsers().some(u => u.id !== currentUser.id && (u.email || '').toLowerCase() === email
                 .toLowerCase());
             if (existing) {
@@ -3057,14 +3070,15 @@ body.dark-mode .chat-contact-accepted-bubble {
             status.textContent = 'جارٍ إرسال الكود...';
             status.className = 'form-text text-muted';
 
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, code: code })
+            // الإرسال عبر Resend (Cloudflare Pages Function /send-otp) بدل EmailJS
+            sendOtpViaResend(email, code)
                 .then(() => {
                     document.getElementById('admin-profile-email-verify-row').classList.remove('d-none');
                     status.textContent = 'تم إرسال كود التحقق إلى بريدك، يرجى إدخاله أدناه (صالح لمدة 10 دقائق).';
                     status.className = 'form-text text-success';
                     startAdminProfileResendCooldown();
                 }).catch(err => {
-                    console.error('EmailJS error:', err);
+                    console.error('Resend OTP error:', err);
                     status.textContent = 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
                     status.className = 'form-text text-danger';
                     sendBtn.disabled = false;
