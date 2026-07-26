@@ -17,6 +17,16 @@
     <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
     <!-- PWA Meta Tags End -->
+    <!-- Preconnect/DNS-prefetch لتسريع إنشاء الاتصالات الخارجية (يوفّر 200-500ms) -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -25,6 +35,121 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
+        /* ============================================================
+           نظام التصميم الموحّد (Design Tokens) — ميثاق
+           يوحّد الألوان والحواف والظلال والتركيز دون تغيير هوية المشروع
+           (الخمري #c8102e / الذهبي #ffd76e). كل القيم الجديدة تستعمل متغيرات
+           CSS لتسهيل الصيانة وضمان الاتساق البصري عبر كل الواجهات.
+           ============================================================ */
+        :root {
+            /* لوحة الهوية (Brand) */
+            --brand: #c8102e;
+            --brand-dark: #8b0021;
+            --brand-darker: #7a0019;
+            --brand-gold: #ffd76e;
+
+            /* محايدات (Neutrals) — للخلفيات والحدود والنصوص الثانوية */
+            --neutral-bg: #f4f6f9;
+            --neutral-surface: #ffffff;
+            --neutral-border: #e5e7eb;
+            --neutral-text-muted: #6b7280;
+
+            /* فقاعات الدردشة: "لي" أخضر، "الطرف الآخر" محايد دافئ بدل الأزرق الصارخ */
+            --chat-mine: #16a34a;
+            --chat-mine-dark: #15803d;
+            --chat-theirs: #6b7280;       /* رمادي دافئ هادئ يتناغم مع الخمري */
+            --chat-theirs-dark: #4b5563;
+
+            /* سُلّم الحواف (Radius scale) — موحّد لكل العناصر */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-pill: 999px;
+
+            /* سُلّم الظلال (Shadow scale) — ناعم واحترافي */
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
+            --shadow-focus: 0 0 0 3px rgba(200, 16, 46, 0.18);
+
+            /* مدة الانتقال الموحّدة */
+            --transition-fast: .15s ease;
+            --transition-base: .2s ease;
+        }
+
+        /* تحسينات الطباعة العربية: تنعيم الحواف، ارتفاع سطر مريح، أرقام جدولية في
+           الجداول والطوابع الزمنية كي لا تتراقص الأعمدة، ومنع letter-spacing غير
+           المناسب للعربية الذي قد يكسر تشكيل الحروف */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            line-height: 1.65;
+            text-size-adjust: 100%;
+        }
+        /* الأرقام الجدولية للجداول والطوابع الزمنية وأي عنصر يحمل .tnum */
+        .table, .chat-bubble-time, .stat-box, .tnum {
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum";
+        }
+
+        /* إمكانية الوصول: حلقة تركيز واضحة على العناصر التفاعلية عند التنقل بالكيبورد فقط
+           (لا تظهر للمستخدمين بالفأرة كي لا تزعج). لونها الخمري لتناسب الهوية */
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        [tabindex]:focus-visible,
+        .sidebar-link:focus-visible,
+        .bnav-item:focus-visible {
+            outline: 2px solid var(--brand);
+            outline-offset: 2px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* بطاقات لوحة التحكم: حواف موحّدة + ظل ناعم + رفع خفيف عند المرور (الديسكتوب
+           فقط عبر @media hover كي لا يعلّق الـ hover على شاشات اللمس) */
+        .dashboard-card {
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .dashboard-card:hover,
+            .card.dashboard-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+        }
+
+        /* أزرار brand: انتقال لون ناعم + رفع خفيف عند المرور */
+        .btn-brand {
+            transition: background-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .btn-brand:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+            .btn-brand:active { transform: translateY(0); }
+        }
+
+        /* الوضع الداكن: ظلال ناعمة لفصل البطاقات عن الخلفية بدل الإطارات الصلبة،
+           وتنعيم ظل نوافذ الدردشة المنبثقة، وتناسق أفضل للتباين */
+        body.dark-mode .dashboard-card,
+        body.dark-mode .card {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        }
+        body.dark-mode .modal-content {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+        }
+        /* حلقة تركيز ذهبية في الوضع الداكن (تباين أعلى مع الخلفيات الداكنة) */
+        body.dark-mode a:focus-visible,
+        body.dark-mode button:focus-visible,
+        body.dark-mode input:focus-visible,
+        body.dark-mode select:focus-visible,
+        body.dark-mode textarea:focus-visible,
+        body.dark-mode [tabindex]:focus-visible {
+            outline-color: var(--brand-gold);
+        }
+
         /* جميع الأنماط السابقة مع الإضافات الجديدة */
         body { font-family: 'Cairo', sans-serif; background-color: #f4f6f9; color: #333; }
         html { font-size: 17.5px; overflow-x: hidden; }
@@ -465,13 +590,13 @@
         .btn-brand:hover { background-color: #059669; color: white; }
         .app-view { display: none; }
         .app-view.active-view { display: block; }
-        .stat-box { border-radius: 8px; padding: 15px; color: white; text-align: center; font-weight: bold; }
+        .stat-box { border-radius: var(--radius-sm); padding: 15px; color: white; text-align: center; font-weight: bold; }
         .chart-container { position: relative; margin: auto; height: 250px; width: 100%; }
         .password-strength-bar { height: 6px; border-radius: 4px; margin-top: 6px; transition: width 0.3s ease, background-color 0.3s ease; width: 0%; background-color: #7a0019; }
         .password-strength-label { font-size: 0.75rem; margin-top: 2px; }
         .profile-picture { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #c8102e; }
         .profile-picture-sm { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #c8102e; }
-        .profile-picture-upload { max-width: 150px; max-height: 150px; border-radius: 12px; object-fit: cover; }
+        .profile-picture-upload { max-width: 150px; max-height: 150px; border-radius: var(--radius-md); object-fit: cover; }
         /* ==================== نقطة حالة الاتصال (متصل / غير متصل) ==================== */
         .avatar-status-wrap { position: relative; display: inline-block; line-height: 0; flex-shrink: 0; }
         .avatar-status-wrap .status-dot {
@@ -601,7 +726,8 @@
         .notif-title { font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
         .notif-text { font-size: 0.82rem; color: #6b7280; margin-top: 2px; line-height: 1.5; }
         .notif-dot { display: inline-block; width: 8px; height: 8px; background: #c8102e; border-radius: 50%; flex-shrink: 0; }
-        .notif-empty { padding: 30px 16px; text-align: center; color: #9ca3af; }
+        .notif-empty { padding: 32px 16px; text-align: center; color: #9ca3af; line-height: 1.8; }
+        .notif-empty i { color: var(--brand); opacity: 0.45; }
         .notif-sender-ref { color: #c8102e; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .notif-sender-ref:hover { color: #059669; }
         body.dark-mode .notif-dropdown-panel { background: #242424; color: #ffffff; box-shadow: 0 12px 32px rgba(0,0,0,0.55); }
@@ -829,6 +955,19 @@
         .female-card { border-top: 4px solid transparent !important; border-image: linear-gradient(90deg, #7a0e3d, #ad1457, #6b0f3d) 1 !important; background-color: #fdeaf1 !important; }
         body.dark-mode .female-card { background-color: #331a26 !important; }
         .stat-box[style*="f472b6"] { background: linear-gradient(120deg, #6b0f3d 0%, #ad1457 50%, #7a0e3d 100%) !important; }
+
+        /* بطاقات الأعضاء (ذكر/أنثى): رفع خفيف + تكبير ظل عند المرور بالفأرة فقط،
+           لِيعطي إحساساً بالتفاعلية دون أن يزعج مستخدمي اللمس. نُطبّقها على .card
+           العامة لتشمل كل بطاقات الموقع */
+        .card {
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+        }
         .reason-reject-text {
             color: #7a0019;
             font-weight: 700;
@@ -857,8 +996,8 @@
             gap: 0.5rem;
         }
         body.dark-mode .chat-messages-box { background: #1f2430; }
-        .chat-empty-state { margin: auto; text-align: center; color: #999; font-size: 0.95rem; }
-        .chat-empty-state i { font-size: 1.8rem; display: block; margin-bottom: 0.4rem; }
+        .chat-empty-state { margin: auto; text-align: center; color: #9ca3af; font-size: 0.95rem; padding: 1.5rem 1rem; line-height: 1.7; }
+        .chat-empty-state i { font-size: 2rem; display: block; margin-bottom: 0.5rem; color: var(--brand); opacity: 0.5; }
         .chat-bubble-row { display: flex; margin-bottom: 0.4rem; }
         .chat-bubble-row.mine { justify-content: flex-end; }
         .chat-bubble-row.theirs { justify-content: flex-start; }
@@ -869,10 +1008,10 @@
             font-size: 0.92rem;
             line-height: 1.4;
         }
-        .chat-bubble-mine { background: #16a34a; color: #fff; border-bottom-right-radius: 3px; }
-        .chat-bubble-theirs { background: #2563eb; color: #fff; border-bottom-left-radius: 3px; }
-        body.dark-mode .chat-bubble-mine { background: #15803d; }
-        body.dark-mode .chat-bubble-theirs { background: #1d4ed8; }
+        .chat-bubble-mine { background: var(--chat-mine); color: #fff; border-bottom-right-radius: 3px; }
+        .chat-bubble-theirs { background: var(--chat-theirs); color: #fff; border-bottom-left-radius: 3px; }
+        body.dark-mode .chat-bubble-mine { background: var(--chat-mine-dark); }
+        body.dark-mode .chat-bubble-theirs { background: var(--chat-theirs-dark); }
         .chat-bubble-sender { font-size: 0.72rem; font-weight: 700; opacity: 0.8; margin-bottom: 0.15rem; }
         .chat-bubble-alert { border: 2px solid #0dcaf0 !important; background: #e7f9fd !important; color: #055160 !important; }
         body.dark-mode .chat-bubble-alert { background: #123a44 !important; color: #cceef7 !important; }
@@ -946,6 +1085,43 @@
             width: 1rem;
             height: 1rem;
             border-width: 0.15em;
+        }
+
+        /* تنسيق مشغّل الصوت الافتراضي داخل فقاعات الرسائل الصوتية.
+           العنصر <audio> يبدو مختلفاً وغير متناسق بين المتصفحات (Chrome/Safari/Firefox)
+           ويكسر انسجام فقاعات الدردشة. هنا نوحّد مظهره قدر الإمكان:
+           - نُصغّره ونعطيه حواف دائرية ليتناسب مع حجم الفقاعة
+           - نجعله يتلوّن بشفافية مع لون الفقاعة (متناسق مع "لي"/"الطرف الآخر")
+           - في الوضع الداكن نخفّض السطوع لئلا يبهر العين مع الخلفيات الداكنة */
+        .chat-voice-bubble audio {
+            border-radius: var(--radius-pill);
+            background: rgba(255, 255, 255, 0.18);
+            color-scheme: light;
+        }
+        /* فقاعة "الطرف الآخر" (داكنة بخلفية رمادية): مشغّل بخلفية شفافة فاتحة */
+        .chat-bubble-theirs .chat-voice-bubble audio {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        /* فقاعة "لي" (خضراء): مشغّل بخلفية شفافة بيضاء أيضاً ليظهر زر التشغيل بوضوح */
+        .chat-bubble-mine .chat-voice-bubble audio {
+            background: rgba(255, 255, 255, 0.22);
+        }
+        /* الوضع الداكن: نخفّض سطوع المشغّل ونضبطه على نمط dark للون التحكم */
+        body.dark-mode .chat-voice-bubble audio {
+            color-scheme: dark;
+            filter: brightness(0.92);
+        }
+        /* على شاشات اللمس الصغيرة: نُصغّر المشغّل لئلا يأخذ مساحة كبيرة */
+        @media (max-width: 575.98px) {
+            .chat-voice-bubble audio {
+                min-width: 120px;
+                height: 32px;
+            }
+        }
+        /* معالجة خصوصية Safari على iOS: يرسم مشغّله الخاص بحدود واضحة،
+           نُخفّف حدة انتقاله ليندمج بصرياً */
+        .chat-voice-bubble audio::-webkit-media-controls-panel {
+            background: transparent;
         }
 
 /* ===== أنماط تبويبات طلبات الاهتمام (Pills) ===== */
@@ -1219,13 +1395,20 @@ body.dark-mode .request-card-actions .action-icon-btn {
 }
 .requests-empty-state {
     text-align: center;
-    padding: 2.5rem 1rem;
-    color: #999;
+    padding: 2.75rem 1rem;
+    color: #9ca3af;
 }
 .requests-empty-state i {
     font-size: 2.5rem;
     margin-bottom: 0.75rem;
     display: block;
+    color: var(--brand);
+    opacity: 0.55;
+}
+.requests-empty-state p {
+    margin: 0.25rem 0 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
 }
 
 /* ===== شريط أدوات نافذة الدردشة المباشرة ===== */
@@ -1330,9 +1513,120 @@ body.dark-mode .chat-contact-accepted-bubble {
     border-color: #1e7e34 !important;
     color: #75b798;
 }
+
+/* ============================================================
+   إيصالات القراءة (Read Receipts) — علامات ✓/✓✓ بجانب الوقت
+   ============================================================ */
+.chat-read-receipt {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 4px;
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+.chat-read-receipt.read {
+    color: var(--brand-gold);
+    opacity: 0.9;
+}
+
+/* ============================================================
+   مؤشر الكتابة (Typing Indicator) — فقاعة "يكتب الآن..." متحركة
+   ============================================================ */
+.chat-typing-indicator {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    margin-bottom: 6px;
+    background: var(--neutral-surface);
+    border: 1px solid var(--neutral-border);
+    border-radius: var(--radius-pill);
+    width: fit-content;
+    font-size: 0.8rem;
+    color: var(--neutral-text-muted);
+    box-shadow: var(--shadow-xs);
+}
+.chat-typing-indicator.visible { display: flex; }
+.chat-typing-dots {
+    display: inline-flex;
+    gap: 3px;
+}
+.chat-typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neutral-text-muted);
+    animation: typingBounce 1.4s infinite ease-in-out both;
+}
+.chat-typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.chat-typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes typingBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+    40% { transform: scale(1); opacity: 1; }
+}
+body.dark-mode .chat-typing-indicator {
+    background: #2a2a2a;
+    border-color: #3a3a3a;
+    color: #9ca3af;
+}
+body.dark-mode .chat-typing-dots span { background: #9ca3af; }
+
+/* ============================================================
+   نظام Toast محسّن (إشعارات عائمة أنيقة)
+   ============================================================ */
+.toast-enhanced-container {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    max-width: 92vw;
+}
+.toast-enhanced {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    font-size: 0.9rem;
+    font-weight: 500;
+    pointer-events: auto;
+    animation: toastSlideDown 0.3s ease;
+    max-width: 420px;
+}
+@keyframes toastSlideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.toast-enhanced.success { background: #16a34a; color: #fff; }
+.toast-enhanced.error { background: #dc2626; color: #fff; }
+.toast-enhanced.warning { background: #d97706; color: #fff; }
+.toast-enhanced.info { background: var(--brand); color: #fff; }
+.toast-enhanced i { font-size: 1.1rem; flex-shrink: 0; }
+body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+
+/* ============================================================
+   احترام تفضيل تقليل الحركة (prefers-reduced-motion)
+   يلغي الرسوم المتحركة والانتقالات للمستخدمين الحساسين للحركة
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
     </style>
 </head>
 <body>
+    <!-- حاوية إشعارات Toast المحسّنة (success/error/warning/info) -->
+    <div id="toast-enhanced-container" class="toast-enhanced-container" aria-live="polite" aria-atomic="true"></div>
     <!-- شاشة تحميل جديدة (بوابة رواق) -->
     <div id="firebase-loading-overlay">
         <iframe src="loading%20screen.html" title="جارٍ التحميل" scrolling="no"></iframe>
@@ -1987,7 +2281,7 @@ body.dark-mode .chat-contact-accepted-bubble {
         </div>
     </div>
     
-    <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-success fw-bold"><i class="fa-solid fa-qrcode"></i> ادعم منصة رواق عبر PayPal</h5><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body text-center"><img src="https://i.ibb.co/B5gxF7rY/qr-code.png" alt="QR Code للدعم" class="qr-modal-image"><p class="mt-3 text-muted">يمكنك مسح هذا الرمز للتبرع ودعم استمرارية المنصة عبر PayPal.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div></div></div></div>
+    <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-success fw-bold"><i class="fa-solid fa-qrcode"></i> ادعم منصة رواق عبر PayPal</h5><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body text-center"><img src="https://i.ibb.co/B5gxF7rY/qr-code.png" alt="QR Code للدعم" class="qr-modal-image" loading="lazy"><p class="mt-3 text-muted">يمكنك مسح هذا الرمز للتبرع ودعم استمرارية المنصة عبر PayPal.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div></div></div></div>
 
     <!-- نافذة التبرع البنكي -->
     <div class="modal fade" id="bankModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-success fw-bold"><i class="fa-solid fa-building-columns"></i> دعم منصة رواق عبر الحساب البنكي</h5><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><p>يمكنك دعم استمرارية المنصة عبر التحويل البنكي إلى الحساب التالي:</p><div class="bank-number-display">0799999001425133130</div><p class="mt-3 text-muted text-center">شكراً لدعمكم الكريم الذي يساعدنا على تقديم الخير.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div></div></div></div>
@@ -2016,10 +2310,11 @@ body.dark-mode .chat-contact-accepted-bubble {
                     <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div id="supportChatTypingIndicator" class="chat-typing-indicator"><span class="chat-typing-dots"><span></span><span></span><span></span></span> يكتب الآن...</div>
                     <div id="supportChatMessages" class="chat-messages-box"></div>
                 </div>
                 <div class="modal-footer chat-input-footer">
-                    <input type="text" id="supportChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendSupportChatMessage();}">
+                    <input type="text" id="supportChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendSupportChatMessage();}" oninput="onChatTyping('support')">
                     <button type="button" class="btn btn-outline-secondary chat-voice-btn" id="supportChatVoiceBtn" onclick="toggleVoiceRecording('support')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
                     <button type="button" class="btn btn-brand" onclick="sendSupportChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
@@ -2064,10 +2359,11 @@ body.dark-mode .chat-contact-accepted-bubble {
                 </div>
                 <div class="modal-body">
                     <div id="directChatLockedNotice" class="alert alert-warning d-none mb-2 py-2"><i class="fa-solid fa-lock"></i> تم إيقاف التواصل بين الطرفين، لا يمكن إرسال رسائل جديدة.</div>
+                    <div id="directChatTypingIndicator" class="chat-typing-indicator"><span class="chat-typing-dots"><span></span><span></span><span></span></span> يكتب الآن...</div>
                     <div id="directChatMessages" class="chat-messages-box"></div>
                 </div>
                 <div class="modal-footer chat-input-footer" id="directChatInputRow">
-                    <input type="text" id="directChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendDirectChatMessage();}">
+                    <input type="text" id="directChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendDirectChatMessage();}" oninput="onChatTyping('direct')">
                     <button type="button" class="btn btn-outline-secondary chat-voice-btn" id="directChatVoiceBtn" onclick="toggleVoiceRecording('direct')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
                     <button type="button" class="btn btn-brand" onclick="sendDirectChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
@@ -2093,6 +2389,26 @@ body.dark-mode .chat-contact-accepted-bubble {
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+
+        // ==================== تفعيل التخزين المؤقت دون اتصال (Offline Persistence) ====================
+        // يسمح بقراءة البيانات مؤقتاً عند انقطاع الشبكة ويُحسّن زمن التحميل بشكل كبير.
+        // يتم تفعيله مرة واحدة فقط ويجب أن يكون قبل أي استدعاء Firestore آخر.
+        // multiTab: true يسمح بمزامنة عدة تبويبات مفتوحة في نفس المتصفح.
+        try {
+            db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+                if (err.code === 'failed-precondition') {
+                    // تبويبات متعددة مفتوحة — لا يمكن تفعيل الـ persistence في هذه الحالة
+                    console.warn('Firestore persistence: تعذّر التفعيل (تبويبات متعددة مفتوحة).');
+                } else if (err.code === 'unimplemented') {
+                    // المتصفح لا يدعم التخزين المؤقت
+                    console.warn('Firestore persistence: المتصفح لا يدعم هذه الميزة.');
+                } else {
+                    console.warn('Firestore persistence:', err);
+                }
+            });
+        } catch (e) {
+            console.warn('Firestore persistence exception:', e);
+        }
 
         // ==================== إعداد EmailJS (للتحقق من البريد الإلكتروني عبر كود) ====================
         // ⚠️ يجب استبدال القيم الثلاث التالية ببياناتك الخاصة من حسابك على emailjs.com قبل التشغيل:
@@ -2258,7 +2574,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             const picSrc = (user && user.profilePicture) ? user.profilePicture : DEFAULT_PROFILE_PICTURE;
             const online = isUserOnline(user);
             return `<div class="avatar-status-wrap ${extraWrapClass || ''}">` +
-                `<img src="${escapeHtml(picSrc)}" alt="صورة العضو" class="${sizeClass}">` +
+                `<img src="${escapeHtml(picSrc)}" alt="صورة العضو" class="${sizeClass}" loading="lazy">` +
                 `<span class="status-dot ${online ? 'status-online' : 'status-offline'}" title="${online ? 'متصل الآن' : 'غير متصل'}"></span>` +
                 `</div>`;
         }
@@ -3208,6 +3524,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             renderSupportChatThread();
             new bootstrap.Modal(document.getElementById('supportChatModal')).show();
             markAdminChatSeen(currentUser.id, 'member');
+            subscribeToTyping('support', activeSupportChatMemberId);
         };
 
         window.openAdminSupportChat = function(memberId) {
@@ -3219,6 +3536,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             renderSupportChatThread();
             new bootstrap.Modal(document.getElementById('supportChatModal')).show();
             markAdminChatSeen(memberId, 'admin');
+            subscribeToTyping('support', activeSupportChatMemberId);
         };
 
         function markAdminChatSeen(memberId, viewerRole) {
@@ -3266,7 +3584,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                                     ${m.senderRole === 'admin' && currentUser.isAdmin === false ? '<div class="chat-bubble-sender">الإدارة</div>' : ''}
                                     ${m.senderRole === 'member' && currentUser.isAdmin === true ? `<div class="chat-bubble-sender">${escapeHtml(m.senderName || 'العضو')}</div>` : ''}
                                     ${contentHtml}
-                                    <div class="chat-bubble-time">${formatDateTimeGlobal(m.timestamp)}</div>
+                                    <div class="chat-bubble-time">${formatDateTimeGlobal(m.timestamp)}${buildSupportReadReceiptHtml(m, mine)}</div>
                                 </div>
                             </div>
                         `;
@@ -3296,6 +3614,8 @@ body.dark-mode .chat-contact-accepted-bubble {
             });
             saveAdminChats(chats);
             input.value = '';
+            clearTypingStatus('support', activeSupportChatMemberId);
+            hapticFeedback(30);
             renderSupportChatThread();
             if (currentUser.isAdmin) sendPushToUser(activeSupportChatMemberId, '💬 رد جديد من الإدارة', 'لديك رسالة جديدة في محادثة الدعم', { type: 'supportChat', url: './index.html' });
             else sendPushToAdmins('💬 رسالة دعم جديدة', 'رسالة جديدة من ' + (currentUser.fullName || ''), { type: 'supportChat', url: './index.html' });
@@ -3374,8 +3694,10 @@ body.dark-mode .chat-contact-accepted-bubble {
             activeDirectChatReadOnly = false;
             _lastOpenDirectChatMsgCount = (chat.messages || []).length;
             sweepExpiredVoiceMessages();
+            markDirectChatRead(chat.id);
             renderDirectChatThread();
             new bootstrap.Modal(document.getElementById('directChatModal')).show();
+            subscribeToTyping('direct', activeDirectChatId);
         };
 
         window.openDirectChatLog = function(chatId) {
@@ -3387,6 +3709,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             sweepExpiredVoiceMessages();
             renderDirectChatThread();
             new bootstrap.Modal(document.getElementById('directChatModal')).show();
+            // الإدارة تتصفح السجل للقراءة فقط — لا حاجة لمؤشر الكتابة
         };
 
         function renderDirectChatThread() {
@@ -3459,7 +3782,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                     } else {
                         contentHtml = `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
                     }
-                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}"><div class="chat-bubble-sender">${escapeHtml(senderName)}</div>${contentHtml}<div class="chat-bubble-time">${timeStr}</div></div></div>`;
+                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}"><div class="chat-bubble-sender">${escapeHtml(senderName)}</div>${contentHtml}<div class="chat-bubble-time">${timeStr}${buildDirectReadReceiptHtml(m, isMine)}</div></div></div>`;
                 }).join('');
             }
             bodyEl.scrollTop = bodyEl.scrollHeight;
@@ -3510,11 +3833,13 @@ body.dark-mode .chat-contact-accepted-bubble {
                 showAlert('لا يمكن إرسال رسائل جديدة، تم إيقاف التواصل بين الطرفين.', 'danger');
                 return;
             }
-            chat.messages.push({ senderId: currentUser.id, text: text, timestamp: new Date().toISOString() });
+            chat.messages.push({ senderId: currentUser.id, text: text, timestamp: new Date().toISOString(), readAt: null });
             // حد أقصى: 50 رسالة لكل محادثة — لمنع تجاوز حد 1MB لوثيقة Firestore
             if (chat.messages.length > 50) chat.messages = chat.messages.slice(-50);
             saveDirectChats(chats);
             input.value = '';
+            clearTypingStatus('direct', activeDirectChatId);
+            hapticFeedback(30);
             renderDirectChatThread();
             const otherId = chat.userAId === currentUser.id ? chat.userBId : chat.userAId;
             sendPushToUser(otherId, '💬 رسالة جديدة', 'رسالة جديدة من ' + (currentUser.profileNumber || currentUser.fullName), { type: 'directChat', url: './index.html' });
@@ -4238,6 +4563,150 @@ body.dark-mode .chat-contact-accepted-bubble {
                     instance.close();
                 }, 3000);
             }
+        }
+
+        // ==================== نظام Toast المحسّن (إشعارات عائمة أنيقة) ====================
+        const TOAST_ICONS = {
+            success: 'fa-circle-check',
+            error: 'fa-circle-exclamation',
+            warning: 'fa-triangle-exclamation',
+            info: 'fa-circle-info'
+        };
+        function showToast(msg, type = 'info', duration = 3500) {
+            const container = document.getElementById('toast-enhanced-container');
+            if (!container) return;
+            const icon = TOAST_ICONS[type] || TOAST_ICONS.info;
+            const el = document.createElement('div');
+            el.className = `toast-enhanced ${type}`;
+            el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${msg}</span>`;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                setTimeout(() => { if (el.isConnected) el.remove(); }, 300);
+            }, duration);
+        }
+
+        // ==================== الاهتزاز (Haptic Feedback) للجوال ====================
+        function hapticFeedback(pattern) {
+            try {
+                if (navigator.vibrate) navigator.vibrate(pattern || 30);
+            } catch (e) { /* تجاهل */ }
+        }
+
+        // ==================== مؤشر الكتابة (Typing Indicator) ====================
+        // يستخدم وثيقة Firestore منفصلة لكل محادثة (typing_<type>_<id>) لتجنّب
+        // إعادة كتابة كامل قائمة المحادثات عند كل ضغطة مفتاح. الـ merge:true يضمن
+        // عدم الكتابة فوق حقول الطرف الآخر.
+        let _typingLastWrite = 0;
+        let _typingUnsub = null;
+        const TYPING_TTL_MS = 3000;       // يعتبر "يكتب الآن" صالحاً لمدة 3 ثوانٍ
+        const TYPING_THROTTLE_MS = 2000;  // حد الكتابة لـ Firestore كل ثانيتين
+
+        function getTypingDocKey(chatType, chatId) {
+            return `typing_${chatType}_${chatId}`;
+        }
+
+        window.onChatTyping = function(chatType) {
+            if (!currentUser) return;
+            let docKey, userId;
+            if (chatType === 'support') {
+                if (activeSupportChatMemberId === null) return;
+                docKey = getTypingDocKey('support', activeSupportChatMemberId);
+                userId = currentUser.isAdmin ? 'admin' : 'member';
+            } else {
+                if (activeDirectChatId === null || currentUser.isAdmin) return;
+                docKey = getTypingDocKey('direct', activeDirectChatId);
+                userId = String(currentUser.id);
+            }
+            const now = Date.now();
+            if (now - _typingLastWrite < TYPING_THROTTLE_MS) return;
+            _typingLastWrite = now;
+            try {
+                db.collection('appData').doc(docKey).set({ [userId]: now }, { merge: true }).catch(() => {});
+            } catch (e) { /* تجاهل */ }
+        };
+
+        function subscribeToTyping(chatType, chatId) {
+            unsubscribeTyping();
+            if (!currentUser) return;
+            const docKey = getTypingDocKey(chatType, chatId);
+            const indicatorId = chatType === 'support' ? 'supportChatTypingIndicator' : 'directChatTypingIndicator';
+            const myKey = chatType === 'support' ? (currentUser.isAdmin ? 'admin' : 'member') : String(currentUser.id);
+            try {
+                _typingUnsub = db.collection('appData').doc(docKey).onSnapshot(snap => {
+                    const indicator = document.getElementById(indicatorId);
+                    if (!indicator) return;
+                    const data = snap.data() || {};
+                    let otherTyping = false;
+                    Object.keys(data).forEach(k => {
+                        if (k !== myKey && data[k] && (Date.now() - data[k]) < TYPING_TTL_MS) {
+                            otherTyping = true;
+                        }
+                    });
+                    if (otherTyping) indicator.classList.add('visible');
+                    else indicator.classList.remove('visible');
+                }, () => { /* تجاهل أخطاء الاشتراك */ });
+            } catch (e) { /* تجاهل */ }
+        }
+
+        function unsubscribeTyping() {
+            if (_typingUnsub) { try { _typingUnsub(); } catch (e) {} _typingUnsub = null; }
+            const s = document.getElementById('supportChatTypingIndicator');
+            const d = document.getElementById('directChatTypingIndicator');
+            if (s) s.classList.remove('visible');
+            if (d) d.classList.remove('visible');
+        }
+
+        function clearTypingStatus(chatType, chatId) {
+            if (!currentUser) return;
+            const docKey = getTypingDocKey(chatType, chatId);
+            const userId = chatType === 'support' ? (currentUser.isAdmin ? 'admin' : 'member') : String(currentUser.id);
+            try {
+                db.collection('appData').doc(docKey).set({ [userId]: 0 }, { merge: true }).catch(() => {});
+            } catch (e) { /* تجاهل */ }
+        }
+
+        // ==================== إيصالات القراءة (Read Receipts) ====================
+        // ✓ = تم الإرسال (لم تُقرأ بعد) | ✓✓ ذهبية = تمت القراءة
+        function buildSupportReadReceiptHtml(m, isMine) {
+            if (!isMine || m.isAlert) return '';
+            const seenByOther = currentUser.isAdmin ? m.seenByMember : m.seenByAdmin;
+            return ` <span class="chat-read-receipt ${seenByOther ? 'read' : ''}" title="${seenByOther ? 'تمت القراءة' : 'تم الإرسال'}"><i class="fa-solid ${seenByOther ? 'fa-check-double' : 'fa-check'}"></i></span>`;
+        }
+
+        function buildDirectReadReceiptHtml(m, isMine) {
+            if (!isMine) return '';
+            const read = !!m.readAt;
+            return ` <span class="chat-read-receipt ${read ? 'read' : ''}" title="${read ? 'تمت القراءة' : 'تم الإرسال'}"><i class="fa-solid ${read ? 'fa-check-double' : 'fa-check'}"></i></span>`;
+        }
+
+        // تعليم رسائل المحادثة المباشرة كمقروءة عند فتحها (لإظهار ✓✓ للمرسل)
+        function markDirectChatRead(chatId) {
+            if (!currentUser) return;
+            const chats = getDirectChats();
+            const chat = chats.find(c => c.id === chatId);
+            if (!chat) return;
+            let changed = false;
+            (chat.messages || []).forEach(m => {
+                if (m.senderId !== currentUser.id && !m.readAt) {
+                    m.readAt = Date.now();
+                    changed = true;
+                }
+            });
+            if (changed) saveDirectChats(chats);
+        }
+
+        // ==================== تسجيل Service Worker لـ PWA (caching + offline) ====================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js').then(function(reg) {
+                    console.log('Service Worker مسجّل بنجاح:', reg.scope);
+                }).catch(function(err) {
+                    console.warn('تعذّر تسجيل Service Worker:', err);
+                });
+            });
         }
 
         function toggleGenderFields(prefix) {
@@ -5126,7 +5595,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             return `
                 <div class="request-card">
                     <div class="request-card-avatar">
-                        ${user.profilePicture && user.profilePicture.url ? `<img src="${escapeHtml(user.profilePicture.url)}" alt="${escapeHtml(user.profileNumber)}">` : `<div class="avatar-placeholder"><i class="fa-solid fa-user"></i></div>`}
+                        ${user.profilePicture && user.profilePicture.url ? `<img src="${escapeHtml(user.profilePicture.url)}" alt="${escapeHtml(user.profileNumber)}" loading="lazy">` : `<div class="avatar-placeholder"><i class="fa-solid fa-user"></i></div>`}
                         <div class="online-dot ${isOnline ? 'online' : ''}"></div>
                     </div>
                     <div class="request-card-info">
@@ -5645,8 +6114,10 @@ body.dark-mode .chat-contact-accepted-bubble {
         window.toggleVoiceRecording = function(context) {
             if (_voiceRec && _voiceRec.state === 'recording') {
                 stopVoiceRecording();
+                hapticFeedback(20);
             } else {
                 startVoiceRecording(context);
+                hapticFeedback(40);
             }
         };
 
@@ -7903,10 +8374,14 @@ body.dark-mode .chat-contact-accepted-bubble {
         document.getElementById('supportChatModal').addEventListener('hidden.bs.modal', function() {
             // إلغاء أي تسجيل صوتي جارٍ عند إغلاق نافذة الدردشة (تفاديًا لبقاء الميكروفون مفتوحًا)
             cancelVoiceRecording();
+            if (activeSupportChatMemberId !== null) clearTypingStatus('support', activeSupportChatMemberId);
+            unsubscribeTyping();
             activeSupportChatMemberId = null;
         });
         document.getElementById('directChatModal').addEventListener('hidden.bs.modal', function() {
             cancelVoiceRecording();
+            if (activeDirectChatId !== null && currentUser && !currentUser.isAdmin) clearTypingStatus('direct', activeDirectChatId);
+            unsubscribeTyping();
             activeDirectChatId = null;
             activeDirectChatReadOnly = false;
             _lastOpenDirectChatMsgCount = null;
