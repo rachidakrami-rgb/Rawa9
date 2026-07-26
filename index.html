@@ -29,6 +29,16 @@
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
     <!-- Umami Analytics — تحليلات خفيفة الوزن تحترم الخصوصية (بدون cookies) -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="fa9106cb-0bae-4c52-83ad-fbb6921393f3"></script>
+    <!-- Open Graph + Twitter Cards — معاينة محسّنة عند مشاركة الرابط على واتساب/تويتر/تيليجرام -->
+    <meta property="og:title" content="ميثاق — بوابة التواصل الاجتماعي">
+    <meta property="og:description" content="منصة تواصل اجتماعي متكاملة بإطار أخلاقي رصين. ابحث، تواصل، وادُر ملفك بأمان واحترام.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ar_AR">
+    <meta property="og:site_name" content="ميثاق">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ميثاق — بوابة التواصل الاجتماعي">
+    <meta name="twitter:description" content="منصة تواصل اجتماعي متكاملة بإطار أخلاقي رصين.">
+    <meta name="description" content="ميثاق: منصة تواصل اجتماعي متكاملة بإطار أخلاقي رصين. ابحث، تواصل، وادُر ملفك بأمان واحترام.">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1614,10 +1624,157 @@ body.dark-mode .chat-typing-dots span { background: #9ca3af; }
 .toast-enhanced i { font-size: 1.1rem; flex-shrink: 0; }
 body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
 
+/* زر "تراجع" داخل Toast (نمط Undo) */
+.toast-undo-btn {
+    background: rgba(255,255,255,0.95) !important;
+    color: #d97706 !important;
+    border: none !important;
+    font-weight: 700 !important;
+    font-size: 0.82rem !important;
+    padding: 4px 12px !important;
+    border-radius: var(--radius-pill) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.15s ease;
+}
+.toast-undo-btn:hover { transform: scale(1.05); background: #fff !important; }
+.toast-undo span { flex: 1; }
+
 /* ============================================================
-   احترام تفضيل تقليل الحركة (prefers-reduced-motion)
-   يلغي الرسوم المتحركة والانتقالات للمستخدمين الحساسين للحركة
+   التفاعل بالرموز التعبيرية (Reactions) — فقاعات الدردشة
    ============================================================ */
+.chat-bubble-actions {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.chat-reaction-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 8px;
+    border-radius: var(--radius-pill);
+    background: rgba(0,0,0,0.06);
+    border: 1px solid transparent;
+    font-size: 0.78rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease, transform 0.15s ease;
+    line-height: 1.4;
+}
+.chat-reaction-pill:hover { background: rgba(0,0,0,0.1); transform: scale(1.08); }
+.chat-reaction-pill.mine {
+    background: rgba(200, 16, 46, 0.12);
+    border-color: var(--brand);
+    font-weight: 700;
+}
+.chat-reaction-pill .reaction-emoji { font-size: 0.85rem; }
+.chat-reaction-pill .reaction-count { font-size: 0.7rem; color: #555; }
+.chat-reaction-pill.mine .reaction-count { color: var(--brand-dark); }
+body.dark-mode .chat-reaction-pill { background: rgba(255,255,255,0.1); }
+body.dark-mode .chat-reaction-pill.mine { background: rgba(255, 215, 110, 0.2); border-color: var(--brand-gold); }
+body.dark-mode .chat-reaction-pill .reaction-count { color: #ccc; }
+
+/* قائمة اختيار الرمز التعبيري المنبثقة */
+.chat-reaction-picker {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--radius-pill);
+    padding: 4px 6px;
+    display: flex;
+    gap: 4px;
+    box-shadow: var(--shadow-md);
+    z-index: 100;
+    animation: reactionPop 0.18s ease;
+}
+body.dark-mode .chat-reaction-picker { background: #2a2a2a; border-color: #444; }
+@keyframes reactionPop {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.chat-reaction-picker button {
+    border: none;
+    background: transparent;
+    font-size: 1.15rem;
+    padding: 2px 5px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease;
+    line-height: 1;
+}
+.chat-reaction-picker button:hover { transform: scale(1.3); background: rgba(0,0,0,0.06); }
+body.dark-mode .chat-reaction-picker button:hover { background: rgba(255,255,255,0.1); }
+
+/* زر إضافة تفاعل (يظهر عند تمرير الفأرة فوق الفقاعة) */
+.chat-bubble-react-trigger {
+    position: absolute;
+    top: -8px;
+    inset-inline-end: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    box-shadow: var(--shadow-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: #6b7280;
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 5;
+}
+body.dark-mode .chat-bubble-react-trigger { background: #2a2a2a; border-color: #444; color: #ccc; }
+.chat-bubble-row:hover .chat-bubble-react-trigger { opacity: 1; }
+.chat-bubble-react-trigger:hover { transform: scale(1.15); color: var(--brand); }
+
+/* ============================================================
+   الرد المُقتبس (Quoted Reply) — معاينة الرسالة الأصلية فوق الفقاعة
+   ============================================================ */
+.chat-quoted-preview {
+    border-inline-start: 3px solid var(--brand);
+    background: rgba(0,0,0,0.05);
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 0.78rem;
+    color: #555;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+body.dark-mode .chat-quoted-preview { background: rgba(255,255,255,0.08); color: #ddd; border-inline-start-color: var(--brand-gold); }
+
+/* شريط معاينة "رد على" فوق حقل الإدخال */
+.chat-reply-bar {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.05);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    font-size: 0.82rem;
+    border-inline-start: 3px solid var(--brand);
+    margin-bottom: 4px;
+}
+.chat-reply-bar.visible { display: flex; }
+.chat-reply-bar .reply-content { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #555; }
+.chat-reply-bar .reply-close {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0 4px;
+}
+.chat-reply-bar .reply-close:hover { color: var(--brand); }
+
+/* احترام تفضيل تقليل الحركة (prefers-reduced-motion) */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -2070,6 +2227,9 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                         <button type="button" class="admin-pill-btn" data-pill="tab-stats" onclick="switchAdminPill('tab-stats'); loadStatistics();">
                             <i class="fa-solid fa-chart-pie"></i> الإحصائيات
                         </button>
+                        <button type="button" class="admin-pill-btn" data-pill="tab-analytics" id="pill-analytics" onclick="switchAdminPill('tab-analytics'); loadAnalyticsDashboard();">
+                            <i class="fa-solid fa-chart-line"></i> لوحة التحليلات
+                        </button>
                         <button type="button" class="admin-pill-btn" data-pill="tab-add-admin" id="pill-add-admin" onclick="switchAdminPill('tab-add-admin')">
                             <i class="fa-solid fa-user-shield"></i> إضافة مشرف
                         </button>
@@ -2136,6 +2296,39 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                                 <div class="dashboard-card"><h5 class="mb-4 text-primary border-bottom pb-2 fw-bold"><i class="fa-solid fa-users-viewfinder"></i> ثانياً: التركيبة الديموغرافية الشاملة للأعضاء</h5><div class="row"><div class="col-lg-6 mb-4"><div class="card h-100 border-0 bg-light p-3"><h6 class="fw-bold text-success mb-3 text-center"><i class="fa-solid fa-chart-bar"></i> توزيع فئات أعمار الأعضاء المسجلين</h6><div class="chart-container"><canvas id="membersAgeBarChart"></canvas></div><ul class="list-group list-group-flush mt-3" id="stats-members-age-list"></ul></div></div><div class="col-lg-6 mb-4"><div class="card h-100 male-card bg-light p-3"><h6 class="fw-bold text-primary mb-3 text-center"><i class="fa-solid fa-mars"></i> الحالة الاجتماعية للذكور</h6><div class="chart-container"><canvas id="membersMaleChart"></canvas></div><ul class="list-unstyled mt-3" id="stats-males-list"></ul></div></div><div class="col-lg-6 mb-4"><div class="card h-100 female-card bg-light p-3"><h6 class="fw-bold text-danger mb-3 text-center"><i class="fa-solid fa-venus"></i> الحالة الاجتماعية والعملية للإناث</h6><div class="chart-container"><canvas id="membersFemaleChart"></canvas></div><ul class="list-unstyled mt-3" id="stats-females-list"></ul></div></div></div></div>
                                 <div class="dashboard-card mt-4"><h5 class="mb-4 text-primary border-bottom pb-2 fw-bold"><i class="fa-solid fa-map-location-dot"></i> رابعاً: توزيع الأعضاء حسب الولاية والجنس والفئة العمرية</h5><p class="text-muted small">يُعرض فقط الولايات التي تحتوي على عضو معتمد واحد على الأقل، مرتبة تنازلياً حسب إجمالي عدد الأعضاء.</p><div class="table-responsive"><table class="table table-bordered table-hover align-middle text-center small"><thead class="table-secondary"><tr><th rowspan="2" class="align-middle">الولاية</th><th colspan="4" class="table-primary">الذكور حسب الفئة العمرية</th><th colspan="4" class="table-danger">الإناث حسب الفئة العمرية</th><th rowspan="2" class="align-middle">الإجمالي</th></tr><tr><th>18-25</th><th>26-35</th><th>36-45</th><th>فوق 45</th><th>18-25</th><th>26-35</th><th>36-45</th><th>فوق 45</th></tr></thead><tbody id="stats-wilaya-table"></tbody></table></div></div>
                                 <div class="dashboard-card mt-4"><h5 class="mb-4 text-primary border-bottom pb-2 fw-bold"><i class="fa-solid fa-user-lock"></i> ثالثاً: إحصائيات الحظر المؤقت للأعضاء</h5><div class="row mb-3"><div class="col-md-4 mb-2"><div class="stat-box bg-secondary text-white"><div>إجمالي الأعضاء المحظورين مؤقتاً</div><h2 id="stat-banned-count">0</h2></div></div><div class="col-md-4 mb-2"><div class="stat-box bg-dark text-white"><div>نسبة المحظورين من إجمالي الأعضاء</div><h2 id="stat-banned-percentage">0%</h2></div></div><div class="col-md-4 mb-2"><div class="stat-box" style="background-color:#f472b6;"><div>الأعضاء النشطون (غير محظورين)</div><h2 id="stat-active-count">0</h2></div></div></div><div class="table-responsive"><table class="table table-bordered align-middle"><thead class="table-secondary"><tr><th>الرقم المرجعي</th><th>الاسم الكامل</th><th>سبب الحظر</th></tr></thead><tbody id="stats-banned-members-table"><tr><td colspan="3" class="text-center text-muted py-3">لا يوجد أعضاء محظورون حالياً.</td></tr></tbody></table></div></div>
+                            </div>
+                        </div>
+                        <!-- قسم 3.5: لوحة التحليلات (محرّكات النشاط + سجل الأخطاء) -->
+                        <div class="admin-section" id="tab-analytics" style="display:none;">
+                            <div class="dashboard-card mb-4">
+                                <h5 class="mb-4 text-success border-bottom pb-2 fw-bold"><i class="fa-solid fa-chart-line"></i> محرّكات النشاط على المنصة</h5>
+                                <p class="text-muted small mb-3">رسوم بيانية لحجم الرسائل اليومية، أكثر الأعضاء نشاطاً، وساعات الذروة. تُحدَّث عند فتح التبويب.</p>
+                                <div class="row mb-3">
+                                    <div class="col-md-3 mb-2"><div class="stat-box bg-success text-white"><div>إجمالي رسائل الدعم</div><h2 id="analytics-total-support">0</h2></div></div>
+                                    <div class="col-md-3 mb-2"><div class="stat-box bg-primary text-white"><div>إجمالي رسائل مباشرة</div><h2 id="analytics-total-direct">0</h2></div></div>
+                                    <div class="col-md-3 mb-2"><div class="stat-box bg-info text-dark"><div>محادثات نشطة</div><h2 id="analytics-active-chats">0</h2></div></div>
+                                    <div class="col-md-3 mb-2"><div class="stat-box bg-warning text-dark"><div>أعضاء متصلون الآن</div><h2 id="analytics-online-now">0</h2></div></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-7 mb-4"><div class="card border-0 bg-light p-3"><h6 class="fw-bold text-success mb-3 text-center"><i class="fa-solid fa-chart-area"></i> حجم الرسائل خلال آخر 7 أيام</h6><div class="chart-container" style="height:260px;"><canvas id="analyticsMessagesChart"></canvas></div></div></div>
+                                    <div class="col-lg-5 mb-4"><div class="card border-0 bg-light p-3"><h6 class="fw-bold text-success mb-3 text-center"><i class="fa-solid fa-clock"></i> ساعات الذروة (Heatmap)</h6><div class="chart-container" style="height:260px;"><canvas id="analyticsPeakHoursChart"></canvas></div></div></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12"><div class="card border-0 bg-light p-3"><h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-trophy"></i> أكثر 10 أعضاء نشاطاً (حسب عدد الرسائل)</h6><div class="table-responsive"><table class="table table-sm table-hover align-middle"><thead class="table-light"><tr><th>#</th><th>الرقم المرجعي</th><th>الاسم</th><th>رسائل دعم</th><th>رسائل مباشرة</th><th>الإجمالي</th></tr></thead><tbody id="analytics-top-members-table"></tbody></table></div></div></div>
+                                </div>
+                            </div>
+                            <div class="dashboard-card">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                    <h5 class="mb-0 text-danger fw-bold"><i class="fa-solid fa-bug"></i> سجل أخطاء JavaScript (آخر 50)</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearErrorLog()"><i class="fa-solid fa-trash"></i> مسح السجل</button>
+                                </div>
+                                <p class="text-muted small">يُجمَّع تلقائياً أي خطأ غير معالَج أو وعد Firebase مرفوض. يُستخدم لتشخيص المشاكل قبل أن يشتكي المستخدمون.</p>
+                                <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+                                    <table class="table table-sm table-hover align-middle">
+                                        <thead class="table-light sticky-top"><tr><th>التاريخ</th><th>النوع</th><th>الرسالة</th><th>المصدر</th></tr></thead>
+                                        <tbody id="analytics-error-log-table"><tr><td colspan="4" class="text-center text-muted py-3">لا توجد أخطاء مسجّلة.</td></tr></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                         <!-- قسم 4: إضافة مشرف -->
@@ -2318,9 +2511,16 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                     <div id="supportChatMessages" class="chat-messages-box"></div>
                 </div>
                 <div class="modal-footer chat-input-footer">
-                    <input type="text" id="supportChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendSupportChatMessage();}" oninput="onChatTyping('support')">
-                    <button type="button" class="btn btn-outline-secondary chat-voice-btn" id="supportChatVoiceBtn" onclick="toggleVoiceRecording('support')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
-                    <button type="button" class="btn btn-brand" onclick="sendSupportChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    <div id="supportChatReplyBar" class="chat-reply-bar w-100">
+                        <i class="fa-solid fa-reply text-muted"></i>
+                        <span class="reply-content" id="supportChatReplyContent"></span>
+                        <button type="button" class="reply-close" onclick="cancelSupportReply()" title="إلغاء الرد"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="d-flex w-100 gap-2">
+                        <input type="text" id="supportChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendSupportChatMessage();}" oninput="onChatTyping('support')">
+                        <button type="button" class="btn btn-outline-secondary chat-voice-btn" id="supportChatVoiceBtn" onclick="toggleVoiceRecording('support')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
+                        <button type="button" class="btn btn-brand" onclick="sendSupportChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2367,9 +2567,16 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                     <div id="directChatMessages" class="chat-messages-box"></div>
                 </div>
                 <div class="modal-footer chat-input-footer" id="directChatInputRow">
-                    <input type="text" id="directChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendDirectChatMessage();}" oninput="onChatTyping('direct')">
-                    <button type="button" class="btn btn-outline-secondary chat-voice-btn" id="directChatVoiceBtn" onclick="toggleVoiceRecording('direct')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
-                    <button type="button" class="btn btn-brand" onclick="sendDirectChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    <div id="directChatReplyBar" class="chat-reply-bar w-100">
+                        <i class="fa-solid fa-reply text-muted"></i>
+                        <span class="reply-content" id="directChatReplyContent"></span>
+                        <button type="button" class="reply-close" onclick="cancelDirectReply()" title="إلغاء الرد"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="d-flex w-100 gap-2">
+                        <input type="text" id="directChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendDirectChatMessage();}" oninput="onChatTyping('direct')">
+                        <button type="button" class="btn btn-outline-secondary chat-voice-btn" id="directChatVoiceBtn" onclick="toggleVoiceRecording('direct')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
+                        <button type="button" class="btn btn-brand" onclick="sendDirectChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2575,7 +2782,11 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
         // يُنشئ صورة العضو (الشخصية أو الافتراضية) مرفقة بنقطة حالة الاتصال، دون أي نص توضيحي
         // بجانبها (فقط لون النقطة: أخضر ساطع = متصل الآن، أحمر = غير متصل)
         function renderAvatarWithStatus(user, sizeClass, extraWrapClass) {
-            const picSrc = (user && user.profilePicture) ? user.profilePicture : DEFAULT_PROFILE_PICTURE;
+            // التوافق مع الصيغتين: profilePicture قد يكون نصاً (روابط قديمة) أو كائناً {url, originalUrl}
+            const picRaw = (user && user.profilePicture) ? user.profilePicture : null;
+            const picSrc = (picRaw && typeof picRaw === 'object' && picRaw.url) ? picRaw.url
+                         : (picRaw && typeof picRaw === 'string') ? picRaw
+                         : DEFAULT_PROFILE_PICTURE;
             const online = isUserOnline(user);
             return `<div class="avatar-status-wrap ${extraWrapClass || ''}">` +
                 `<img src="${escapeHtml(picSrc)}" alt="صورة العضو" class="${sizeClass}" loading="lazy">` +
@@ -2865,11 +3076,18 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                 if (xhr.status >= 200 && xhr.status < 300) {
                     try {
                         const response = JSON.parse(xhr.responseText);
-                        const downloadURL = response.secure_url;
-                        currentProfilePictureUrl = downloadURL;
+                        // Cloudinary Transformations: نُطبّق تحويلات على الطريق (f_auto: صيغة تلقائية WebP/AVIF،
+                        // q_auto: ضغط ذكي بجودة 80، w_400/h_400/c_fill/g_face: قص مربّع 400px مع تركيز على الوجه).
+                        // يُخزّن original_url للرجوع إليه، لكن نستخدم transformed URL للعرض لتوفير 60-80% من الحجم.
+                        const originalUrl = response.secure_url;
+                        const downloadURL = originalUrl.replace(
+                            '/upload/',
+                            '/upload/f_auto,q_auto,w_400,h_400,c_fill,g_face/'
+                        );
+                        currentProfilePictureUrl = { url: downloadURL, originalUrl: originalUrl };
                         const users = getUsers();
                         const idx = users.findIndex(u => u.id === currentUser.id);
-                        if (idx !== -1) { users[idx].profilePicture = downloadURL;
+                        if (idx !== -1) { users[idx].profilePicture = currentProfilePictureUrl;
                             saveUsers(users);
                             currentUser = users[idx]; }
                         updateProfilePictureUI(downloadURL);
@@ -2924,8 +3142,14 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
         }
 
         function loadProfilePicture() {
-            if (currentUser && currentUser.profilePicture) { currentProfilePictureUrl = currentUser.profilePicture;
-                updateProfilePictureUI(currentUser.profilePicture); } else { updateProfilePictureUI(null); }
+            if (currentUser && currentUser.profilePicture) {
+                currentProfilePictureUrl = currentUser.profilePicture;
+                // التوافق مع الصيغتين: نص أو كائن {url, originalUrl}
+                const picForUi = (typeof currentUser.profilePicture === 'object')
+                    ? currentUser.profilePicture.url
+                    : currentUser.profilePicture;
+                updateProfilePictureUI(picForUi);
+            } else { updateProfilePictureUI(null); }
         }
 
         // ==================== دوال QR / بنك ====================
@@ -2973,8 +3197,7 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
         window.cutOffContact = function(otherUserId, requestId) {
             if (!currentUser) return;
             if (hasCutoffBetween(currentUser.id, otherUserId)) return;
-            if (!confirm('هل أنت متأكد من قطع التواصل مع هذا العضو؟ سيختفي رابط التواصل لدى الطرفين ولن تتمكنا من إرسال طلب اهتمام جديد لبعضكما مستقبلاً.')) return;
-
+            // قطع فوري + Toast بنمط Undo لمدة 6 ثوانٍ (إجراء حسّاس لكن قابل للتراجع قصير المدى)
             const cutoffs = getCutoffs();
             const newCutoff = {
                 id: cutoffs.length > 0 ? Math.max(...cutoffs.map(c => c.id)) + 1 : 1,
@@ -2985,9 +3208,15 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
             };
             cutoffs.push(newCutoff);
             saveCutoffs(cutoffs);
-            showAlert('تم قطع التواصل مع هذا العضو.', 'success');
             renderUI();
             renderNotifications();
+            showUndoToast('تم قطع التواصل مع العضو', 6000, function() {
+                const cur = getCutoffs().filter(c => c.id !== newCutoff.id);
+                saveCutoffs(cur);
+                renderUI();
+                renderNotifications();
+                showToast('تم استعادة التواصل مع العضو', 'success');
+            });
         };
         function openReportModal(userId, requestId) {
             if (!currentUser) { showAlert('يرجى تسجيل الدخول أولاً.', 'danger'); return; }
@@ -3171,15 +3400,24 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
 
         function saveDirectChats(chats) { saveCollection('directChats', chats); }
 
-        // ==================== حذف سجل محادثة مباشرة نهائياً (من السجل الدائم) ====================
+        // ==================== حذف سجل محادثة مباشرة (نمط Undo بدل التأكيد المزعج) ====================
         window.deleteDirectChat = function(chatId) {
             if (!currentUser || !currentUser.isAdmin) return;
             if (!hasPermission('manageMembers')) { showAlert('لا تملك صلاحية حذف المحادثات.', 'danger'); return; }
-            if (!confirm('هل أنت متأكد من حذف سجل هذه المحادثة نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
-            const chats = getDirectChats().filter(c => c.id !== chatId);
-            saveDirectChats(chats);
-            showAlert('تم حذف سجل المحادثة بنجاح.', 'success');
+            const allChats = getDirectChats();
+            const backup = allChats.find(c => c.id === chatId) || null;
+            const newChats = allChats.filter(c => c.id !== chatId);
+            saveDirectChats(newChats);
             renderUI();
+            showUndoToast('تم حذف سجل المحادثة', 5000, function() {
+                if (backup) {
+                    const cur = getDirectChats();
+                    if (!cur.find(c => c.id === backup.id)) cur.push(backup);
+                    saveDirectChats(cur);
+                    renderUI();
+                    showToast('تم استعادة المحادثة', 'success');
+                }
+            });
         };
 
 
@@ -3523,6 +3761,7 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
         window.openSupportChat = function() {
             if (!currentUser || currentUser.isAdmin) return;
             activeSupportChatMemberId = currentUser.id;
+            resetChatVisibleLimits();
             ensureAdminChatForMember(currentUser.id);
             sweepExpiredVoiceMessages();
             renderSupportChatThread();
@@ -3535,6 +3774,7 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
             if (!currentUser || !currentUser.isAdmin) return;
             if (!hasPermission('manageMembers')) return;
             activeSupportChatMemberId = memberId;
+            resetChatVisibleLimits();
             ensureAdminChatForMember(memberId);
             sweepExpiredVoiceMessages();
             renderSupportChatThread();
@@ -3557,6 +3797,27 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
             if (changed) saveAdminChats(chats);
         }
 
+        const CHAT_PAGE_SIZE = 30; // عدد الرسائل المعروضة في كل دفعة (Virtual Scrolling)
+        let _supportVisibleLimit = CHAT_PAGE_SIZE;
+        let _directVisibleLimit = CHAT_PAGE_SIZE;
+        // إعادة ضبط الدفعة عند فتح محادثة جديدة (يُستدعى من openSupportChat/openDirectChat)
+        function resetChatVisibleLimits() { _supportVisibleLimit = CHAT_PAGE_SIZE; _directVisibleLimit = CHAT_PAGE_SIZE; }
+        window.loadMoreSupportMessages = function() {
+            _supportVisibleLimit += CHAT_PAGE_SIZE;
+            // الحفاظ على موضع التمرير تقريباً (سيُعاد رسم الفقاعات)
+            const bodyEl = document.getElementById('supportChatMessages');
+            const prevScroll = bodyEl ? bodyEl.scrollHeight - bodyEl.scrollTop : 0;
+            renderSupportChatThread();
+            if (bodyEl) bodyEl.scrollTop = bodyEl.scrollHeight - prevScroll;
+        };
+        window.loadMoreDirectMessages = function() {
+            _directVisibleLimit += CHAT_PAGE_SIZE;
+            const bodyEl = document.getElementById('directChatMessages');
+            const prevScroll = bodyEl ? bodyEl.scrollHeight - bodyEl.scrollTop : 0;
+            renderDirectChatThread();
+            if (bodyEl) bodyEl.scrollTop = bodyEl.scrollHeight - prevScroll;
+        };
+
         function renderSupportChatThread() {
             const titleEl = document.getElementById('supportChatModalTitle');
             const bodyEl = document.getElementById('supportChatMessages');
@@ -3567,11 +3828,19 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                 ? `<i class="fa-solid fa-headset"></i> محادثة الدعم مع: ${escapeHtml(member ? member.fullName + ' (' + member.profileNumber + ')' : 'عضو')}`
                 : `<i class="fa-solid fa-headset"></i> تواصل مباشر مع الإدارة`;
             const chat = findAdminChatForMember(activeSupportChatMemberId);
-            const messages = chat ? chat.messages : [];
-            if (messages.length === 0) {
+            const allMessages = chat ? chat.messages : [];
+            if (allMessages.length === 0) {
                 bodyEl.innerHTML = `<div class="chat-empty-state"><i class="fa-solid fa-comments"></i><br>لا توجد رسائل بعد، ابدأ المحادثة الآن.</div>`;
             } else {
-                bodyEl.innerHTML = messages.map(m => {
+                // Virtual Scrolling: عرض آخر N رسالة فقط، مع زر "تحميل المزيد" في الأعلى عند توفر رسائل أقدم
+                const limit = Math.min(_supportVisibleLimit, allMessages.length);
+                const visible = allMessages.slice(-limit);
+                const hasOlder = allMessages.length > limit;
+                const olderCount = allMessages.length - limit;
+                const loadMoreHtml = hasOlder
+                    ? `<div class="text-center py-2"><button class="btn btn-sm btn-outline-secondary" onclick="loadMoreSupportMessages()">↑ عرض ${olderCount} رسالة أقدم</button></div>`
+                    : '';
+                bodyEl.innerHTML = loadMoreHtml + visible.map(m => {
                     const mine = currentUser.isAdmin ? m.senderRole === 'admin' : m.senderRole === 'member';
                     // محتوى الفقاعة: رسالة صوتية، أو نص عادي
                     let contentHtml;
@@ -3581,14 +3850,22 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                     } else {
                         contentHtml = `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
                     }
+                    // الإدارة في وضع القراءة فقط لا يمكنها التفاعل أو الرد
+                    const canInteract = !m.isAlert && !(currentUser.isAdmin === false && m.senderRole === 'member');
+                    const reactTriggerHtml = canInteract
+                        ? `<button class="chat-bubble-react-trigger" onclick="event.stopPropagation(); openReactionPicker('support', ${activeSupportChatMemberId}, ${m.id}, this)" title="تفاعل"><i class="fa-regular fa-face-smile"></i></button><button class="chat-bubble-react-trigger" style="inset-inline-end: 36px;" onclick="event.stopPropagation(); startReplyToMessage('support', ${activeSupportChatMemberId}, ${m.id})" title="رد"><i class="fa-solid fa-reply"></i></button>`
+                        : '';
                     return `
                             <div class="chat-bubble-row ${mine ? 'mine' : 'theirs'}">
-                                <div class="chat-bubble ${mine ? 'chat-bubble-mine' : 'chat-bubble-theirs'} ${m.isAlert ? 'chat-bubble-alert' : ''}">
+                                <div class="chat-bubble ${mine ? 'chat-bubble-mine' : 'chat-bubble-theirs'} ${m.isAlert ? 'chat-bubble-alert' : ''}" style="position: relative;">
+                                    ${reactTriggerHtml}
                                     ${m.isAlert ? '<div class="chat-bubble-alert-badge"><i class="fa-solid fa-bell"></i> تنبيه إداري</div>' : ''}
                                     ${m.senderRole === 'admin' && currentUser.isAdmin === false ? '<div class="chat-bubble-sender">الإدارة</div>' : ''}
                                     ${m.senderRole === 'member' && currentUser.isAdmin === true ? `<div class="chat-bubble-sender">${escapeHtml(m.senderName || 'العضو')}</div>` : ''}
+                                    ${buildQuotedPreviewHtml(m)}
                                     ${contentHtml}
                                     <div class="chat-bubble-time">${formatDateTimeGlobal(m.timestamp)}${buildSupportReadReceiptHtml(m, mine)}</div>
+                                    ${buildReactionsHtml(m, 'support', activeSupportChatMemberId)}
                                 </div>
                             </div>
                         `;
@@ -3607,7 +3884,10 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                         memberId: activeSupportChatMemberId, messages: [] };
                     chats.push(c);
                     return c; })();
-            chat.messages.push({
+            // توليد ID فريد للرسالة (مطلوب للتفاعلات والردود المُقتبَسة)
+            const newMsgId = chat.messages.length > 0 ? Math.max(...chat.messages.map(m => m.id || 0)) + 1 : 1;
+            const newMsg = {
+                id: newMsgId,
                 senderRole: currentUser.isAdmin ? 'admin' : 'member',
                 senderId: currentUser.id,
                 senderName: currentUser.fullName,
@@ -3615,9 +3895,17 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                 timestamp: new Date().toISOString(),
                 seenByAdmin: currentUser.isAdmin ? true : false,
                 seenByMember: currentUser.isAdmin ? false : true
-            });
+            };
+            // إرفاق بيانات الرد المُقتبَس إن وُجدت
+            if (_supportReplyTo) {
+                newMsg.replyTo = _supportReplyTo.id;
+                newMsg.replyToText = _supportReplyTo.text;
+            }
+            chat.messages.push(newMsg);
             saveAdminChats(chats);
             input.value = '';
+            // إعادة ضبط حالة الرد المُقتبَس
+            setSupportReplyTo(null);
             clearTypingStatus('support', activeSupportChatMemberId);
             hapticFeedback(30);
             renderSupportChatThread();
@@ -3695,6 +3983,7 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
             const chat = getDirectChatForUsers(currentUser.id, otherUserId) ||
                 ensureDirectChatForRequest({ id: requestId }, currentUser.id, otherUserId);
             activeDirectChatId = chat.id;
+            resetChatVisibleLimits();
             activeDirectChatReadOnly = false;
             _lastOpenDirectChatMsgCount = (chat.messages || []).length;
             sweepExpiredVoiceMessages();
@@ -3707,6 +3996,7 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
         window.openDirectChatLog = function(chatId) {
             if (!currentUser || !currentUser.isAdmin) return;
             activeDirectChatId = chatId;
+            resetChatVisibleLimits();
             activeDirectChatReadOnly = true;
             const chat = getDirectChats().find(c => c.id === chatId);
             _lastOpenDirectChatMsgCount = chat ? (chat.messages || []).length : null;
@@ -3749,11 +4039,19 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                 if (directVoiceBtn) directVoiceBtn.classList.remove('d-none');
             }
 
-            const messages = chat.messages || [];
-            if (messages.length === 0) {
+            const allMessages = chat.messages || [];
+            if (allMessages.length === 0) {
                 bodyEl.innerHTML = '<p class="text-center text-muted py-3">لم يتم تبادل رسائل بعد.</p>';
             } else {
-                bodyEl.innerHTML = messages.map(m => {
+                // Virtual Scrolling: عرض آخر N رسالة فقط، مع زر "تحميل المزيد" في الأعلى عند توفر رسائل أقدم
+                const limit = Math.min(_directVisibleLimit, allMessages.length);
+                const visible = allMessages.slice(-limit);
+                const hasOlder = allMessages.length > limit;
+                const olderCount = allMessages.length - limit;
+                const loadMoreHtml = hasOlder
+                    ? `<div class="text-center py-2"><button class="btn btn-sm btn-outline-secondary" onclick="loadMoreDirectMessages()">↑ عرض ${olderCount} رسالة أقدم</button></div>`
+                    : '';
+                bodyEl.innerHTML = loadMoreHtml + visible.map(m => {
                     if (m.type === 'contact_request') {
                         if (m.status === 'accepted' || (req && req.contactRevealed)) {
                             const contactInfo = otherUser && otherUser.phone
@@ -3786,7 +4084,12 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                     } else {
                         contentHtml = `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
                     }
-                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}"><div class="chat-bubble-sender">${escapeHtml(senderName)}</div>${contentHtml}<div class="chat-bubble-time">${timeStr}${buildDirectReadReceiptHtml(m, isMine)}</div></div></div>`;
+                    // الإدارة في وضع القراءة فقط لا يمكنها التفاعل أو الرد
+                    const canInteractDirect = !m.isAlert && !currentUser.isAdmin && m.type !== 'contact_request';
+                    const reactTriggerDirectHtml = canInteractDirect
+                        ? `<button class="chat-bubble-react-trigger" onclick="event.stopPropagation(); openReactionPicker('direct', ${chat.id}, ${m.id}, this)" title="تفاعل"><i class="fa-regular fa-face-smile"></i></button><button class="chat-bubble-react-trigger" style="inset-inline-end: 36px;" onclick="event.stopPropagation(); startReplyToMessage('direct', ${chat.id}, ${m.id})" title="رد"><i class="fa-solid fa-reply"></i></button>`
+                        : '';
+                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}" style="position: relative;">${reactTriggerDirectHtml}<div class="chat-bubble-sender">${escapeHtml(senderName)}</div>${buildQuotedPreviewHtml(m)}${contentHtml}<div class="chat-bubble-time">${timeStr}${buildDirectReadReceiptHtml(m, isMine)}</div>${buildReactionsHtml(m, 'direct', chat.id)}</div></div>`;
                 }).join('');
             }
             bodyEl.scrollTop = bodyEl.scrollHeight;
@@ -3837,11 +4140,22 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                 showAlert('لا يمكن إرسال رسائل جديدة، تم إيقاف التواصل بين الطرفين.', 'danger');
                 return;
             }
-            chat.messages.push({ senderId: currentUser.id, text: text, timestamp: new Date().toISOString(), readAt: null });
+            // توليد ID فريد للرسالة (مطلوب للتفاعلات والردود المُقتبَسة)
+            const newMsgId = (chat.messages && chat.messages.length > 0)
+                ? Math.max(...chat.messages.map(m => m.id || 0)) + 1 : 1;
+            const newMsg = { id: newMsgId, senderId: currentUser.id, text: text, timestamp: new Date().toISOString(), readAt: null };
+            // إرفاق بيانات الرد المُقتبَس إن وُجدت
+            if (_directReplyTo) {
+                newMsg.replyTo = _directReplyTo.id;
+                newMsg.replyToText = _directReplyTo.text;
+            }
+            chat.messages.push(newMsg);
             // حد أقصى: 50 رسالة لكل محادثة — لمنع تجاوز حد 1MB لوثيقة Firestore
             if (chat.messages.length > 50) chat.messages = chat.messages.slice(-50);
             saveDirectChats(chats);
             input.value = '';
+            // إعادة ضبط حالة الرد المُقتبَس
+            setDirectReplyTo(null);
             clearTypingStatus('direct', activeDirectChatId);
             hapticFeedback(30);
             renderDirectChatThread();
@@ -3960,6 +4274,27 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                 renderSupportInboxTable();
                 renderDirectChatsAdminLog();
             }
+            // Title ديناميكي: نزيد عدّاد الرسائل غير المقروءة في عنوان التبويب عند وصول
+            // رسائل جديدة والصفحة غير مرئية (تبويب خلفي).
+            if (document.hidden && currentUser) {
+                let incomingNew = 0;
+                // محادثات الدعم
+                const adminChats = getAdminChats();
+                adminChats.forEach(c => {
+                    const viewerRole = currentUser.isAdmin ? 'admin' : 'member';
+                    if (viewerRole === 'member' && c.memberId === currentUser.id) {
+                        incomingNew += (c.messages || []).filter(m => m.senderRole === 'admin' && !m.seenByMember).length;
+                    }
+                });
+                // محادثات مباشرة
+                const directChats = getDirectChats();
+                directChats.forEach(c => {
+                    if (c.userAId === currentUser.id || c.userBId === currentUser.id) {
+                        incomingNew += (c.messages || []).filter(m => m.senderId !== currentUser.id && !m.readAt).length;
+                    }
+                });
+                if (incomingNew > 0) bumpUnreadMsgCount(incomingNew);
+            }
             // تحديث فوري لأي نافذة دردشة مفتوحة حالياً عند وصول رسائل جديدة، دون الحاجة لتحديث الصفحة
             if (currentUser && activeSupportChatMemberId !== null && isModalOpen('supportChatModal')) {
                 const viewerRole = currentUser.isAdmin ? 'admin' : 'member';
@@ -4007,17 +4342,57 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                 badge.classList.remove('d-none'); } else { badge.classList.add('d-none'); }
         }
 
-        // ==================== حذف سجل محادثة دعم مع عضو نهائياً (حصرياً للمسؤول الرئيسي) ====================
+        // ==================== حذف سجل محادثة دعم مع عضو (نمط Undo بدل التأكيد المزعج) ====================
+        // نحذف فوراً ثم نُظهر toast بزر "تراجع" لمدة 5 ثوانٍ. أسرع وأنعم من confirm().
         window.deleteAdminSupportChat = function(memberId) {
             if (!currentUser || !currentUser.isAdmin) return;
             const isMainAdmin = currentUser.username === 'admin' || isSuperAdmin();
             if (!isMainAdmin) { showAlert('حذف محادثات الدعم متاح فقط للمسؤول الرئيسي.', 'danger'); return; }
-            if (!confirm('هل أنت متأكد من حذف سجل محادثة الدعم هذه نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
-            const chats = getAdminChats().filter(c => c.memberId !== memberId);
-            saveAdminChats(chats);
-            showAlert('تم حذف محادثة الدعم بنجاح.', 'success');
+            // حفظ نسخة احتياطية للتراجع
+            const allChats = getAdminChats();
+            const backup = allChats.find(c => c.memberId === memberId) || null;
+            const newChats = allChats.filter(c => c.memberId !== memberId);
+            saveAdminChats(newChats);
             renderUI();
+            // toast مع زر تراجع لمدة 5 ثوانٍ
+            showUndoToast('تم حذف محادثة الدعم', 5000, function() {
+                if (backup) {
+                    const cur = getAdminChats();
+                    if (!cur.find(c => c.memberId === backup.memberId)) cur.push(backup);
+                    saveAdminChats(cur);
+                    renderUI();
+                    showToast('تم استعادة المحادثة', 'success');
+                }
+            });
         };
+
+        // ==================== نظام Undo Toast العام ====================
+        // يُظهر toast مع زر "تراجع" ينفّذ callback عند الضغط، أو يُغلق تلقائياً بعد المدة.
+        function showUndoToast(message, duration, onUndo) {
+            const container = document.getElementById('toast-enhanced-container');
+            if (!container) { showToast(message, 'warning'); return; }
+            const el = document.createElement('div');
+            el.className = 'toast-enhanced warning toast-undo';
+            el.innerHTML = `<i class="fa-solid fa-trash-can"></i><span>${message}</span><button class="btn btn-sm btn-light ms-2 toast-undo-btn"><i class="fa-solid fa-rotate-left"></i> تراجع</button>`;
+            container.appendChild(el);
+            let undone = false;
+            const undoBtn = el.querySelector('.toast-undo-btn');
+            if (undoBtn) {
+                undoBtn.onclick = function() {
+                    undone = true;
+                    try { onUndo && onUndo(); } catch (e) { /* تجاهل */ }
+                    if (el.isConnected) el.remove();
+                };
+            }
+            setTimeout(() => {
+                if (!undone && el.isConnected) {
+                    el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(-10px)';
+                    setTimeout(() => { if (el.isConnected) el.remove(); }, 300);
+                }
+            }, duration);
+        }
 
         function renderSupportInboxTable() {
             const table = document.getElementById('admin-support-chats-table');
@@ -4702,6 +5077,156 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
             if (changed) saveDirectChats(chats);
         }
 
+        // ============================================================
+        // التفاعل بالرموز التعبيرية (Reactions) + الرد المُقتبس (Quoted Reply)
+        // ============================================================
+        const CHAT_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+        // يبني HTML لقسم التفاعلات أسفل فقاعة رسالة (يدعم محادثات الدعم والمباشرة)
+        // معيار التخزين: m.reactions = { '❤️': [uid1, uid2], '👍': [uid3] }
+        function buildReactionsHtml(msg, context, chatRef) {
+            if (!msg || msg.isAlert || msg.type === 'contact_request') return '';
+            const reactions = msg.reactions || {};
+            const entries = Object.entries(reactions).filter(([_, uids]) => Array.isArray(uids) && uids.length > 0);
+            if (entries.length === 0) return '';
+            const myUid = currentUser ? currentUser.id : null;
+            const pillsHtml = entries.map(([emoji, uids]) => {
+                const mine = myUid && uids.includes(myUid);
+                return `<span class="chat-reaction-pill ${mine ? 'mine' : ''}" onclick="toggleMessageReaction('${context}', ${chatRef}, ${msg.id}, '${emoji}')" title="${mine ? 'إزالة تفاعلك' : 'تفاعل بـ ' + emoji}">
+                    <span class="reaction-emoji">${emoji}</span><span class="reaction-count">${uids.length}</span>
+                </span>`;
+            }).join('');
+            return `<div class="chat-bubble-actions">${pillsHtml}</div>`;
+        }
+
+        // يبني HTML لمعاينة الرسالة المُقتبَسة (إن وُجدت) داخل فقاعة الرد
+        function buildQuotedPreviewHtml(msg) {
+            if (!msg || !msg.replyToText) return '';
+            return `<div class="chat-quoted-preview"><i class="fa-solid fa-reply"></i> ${escapeHtml(msg.replyToText)}</div>`;
+        }
+
+        // تبديل تفاعل المستخدم الحالي على رمز معيّن (إضافة/إزالة)
+        window.toggleMessageReaction = function(context, chatRef, msgId, emoji) {
+            if (!currentUser) return;
+            // chatRef: memberId رقمي لمحادثات الدعم، أو chatId رقمي للمباشرة
+            try {
+                if (context === 'support') {
+                    const chats = getAdminChats();
+                    const chat = chats.find(c => c.memberId === chatRef);
+                    if (!chat) return;
+                    const msg = (chat.messages || []).find(m => m.id === msgId);
+                    if (!msg) return;
+                    if (!msg.reactions) msg.reactions = {};
+                    if (!Array.isArray(msg.reactions[emoji])) msg.reactions[emoji] = [];
+                    const idx = msg.reactions[emoji].indexOf(currentUser.id);
+                    if (idx === -1) msg.reactions[emoji].push(currentUser.id);
+                    else msg.reactions[emoji].splice(idx, 1);
+                    // تنظيف الإيموجي الفارغ
+                    if (msg.reactions[emoji].length === 0) delete msg.reactions[emoji];
+                    saveAdminChats(chats);
+                    renderSupportChatThread();
+                } else if (context === 'direct') {
+                    const chats = getDirectChats();
+                    const chat = chats.find(c => c.id === chatRef);
+                    if (!chat) return;
+                    const msg = (chat.messages || []).find(m => m.id === msgId);
+                    if (!msg) return;
+                    if (!msg.reactions) msg.reactions = {};
+                    if (!Array.isArray(msg.reactions[emoji])) msg.reactions[emoji] = [];
+                    const idx = msg.reactions[emoji].indexOf(currentUser.id);
+                    if (idx === -1) msg.reactions[emoji].push(currentUser.id);
+                    else msg.reactions[emoji].splice(idx, 1);
+                    if (msg.reactions[emoji].length === 0) delete msg.reactions[emoji];
+                    saveDirectChats(chats);
+                    renderDirectChatThread();
+                }
+                hapticFeedback(15);
+            } catch (e) {
+                logErrorToStore('reaction_toggle', e.message, e.stack, 'context=' + context);
+                showToast('تعذّر تحديث التفاعل', 'error');
+            }
+        };
+
+        // إظهار منتقي الرموز التعبيرية فوق فقاعة رسالة
+        window.openReactionPicker = function(context, chatRef, msgId, anchorEl) {
+            // إزالة أي منتقي مفتوح سابقاً
+            document.querySelectorAll('.chat-reaction-picker').forEach(p => p.remove());
+            if (!anchorEl) return;
+            const picker = document.createElement('div');
+            picker.className = 'chat-reaction-picker';
+            picker.innerHTML = CHAT_REACTION_EMOJIS.map(emoji =>
+                `<button onclick="toggleMessageReaction('${context}', ${chatRef}, ${msgId}, '${emoji}'); this.closest('.chat-reaction-picker').remove();" title="${emoji}">${emoji}</button>`
+            ).join('');
+            document.body.appendChild(picker);
+            // وضع المنتقي بجوار زر التفاعل
+            const rect = anchorEl.getBoundingClientRect();
+            picker.style.position = 'fixed';
+            picker.style.top = (rect.top - 38) + 'px';
+            picker.style.left = (rect.left - 60) + 'px';
+            // إغلاق المنتقي عند النقر خارجه
+            setTimeout(() => {
+                const closeHandler = function(ev) {
+                    if (!picker.contains(ev.target)) {
+                        picker.remove();
+                        document.removeEventListener('click', closeHandler);
+                    }
+                };
+                document.addEventListener('click', closeHandler);
+            }, 50);
+        };
+
+        // ==================== الرد المُقتبس (Quoted Reply) ====================
+        let _supportReplyTo = null;   // {id, text}
+        let _directReplyTo = null;    // {id, text}
+
+        function setSupportReplyTo(msg) {
+            _supportReplyTo = msg ? { id: msg.id, text: (msg.text || (msg.type === 'voice' ? '🎤 رسالة صوتية' : '')).slice(0, 80) } : null;
+            const bar = document.getElementById('supportChatReplyBar');
+            const content = document.getElementById('supportChatReplyContent');
+            if (bar && content) {
+                if (_supportReplyTo) {
+                    content.textContent = _supportReplyTo.text || '';
+                    bar.classList.add('visible');
+                    document.getElementById('supportChatInput')?.focus();
+                } else {
+                    bar.classList.remove('visible');
+                }
+            }
+        }
+        window.cancelSupportReply = function() { setSupportReplyTo(null); };
+
+        function setDirectReplyTo(msg) {
+            _directReplyTo = msg ? { id: msg.id, text: (msg.text || (msg.type === 'voice' ? '🎤 رسالة صوتية' : '')).slice(0, 80) } : null;
+            const bar = document.getElementById('directChatReplyBar');
+            const content = document.getElementById('directChatReplyContent');
+            if (bar && content) {
+                if (_directReplyTo) {
+                    content.textContent = _directReplyTo.text || '';
+                    bar.classList.add('visible');
+                    document.getElementById('directChatInput')?.focus();
+                } else {
+                    bar.classList.remove('visible');
+                }
+            }
+        }
+        window.cancelDirectReply = function() { setDirectReplyTo(null); };
+
+        // يبدأ رداً مُقتبساً على رسالة محددة (يُستدعى من زر "رد" الذي يظهر على الفقاعة)
+        window.startReplyToMessage = function(context, chatRef, msgId) {
+            try {
+                let msg = null;
+                if (context === 'support') {
+                    const chat = getAdminChats().find(c => c.memberId === chatRef);
+                    msg = chat && (chat.messages || []).find(m => m.id === msgId);
+                    setSupportReplyTo(msg);
+                } else if (context === 'direct') {
+                    const chat = getDirectChats().find(c => c.id === chatRef);
+                    msg = chat && (chat.messages || []).find(m => m.id === msgId);
+                    setDirectReplyTo(msg);
+                }
+            } catch (e) { /* تجاهل */ }
+        };
+
         // ==================== تسجيل Service Worker لـ PWA (caching + offline) ====================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
@@ -4919,6 +5444,7 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
                         <div class="sidebar-divider"></div>
                         ${perms.manageMembers ? `<a onclick="openAdminTab('tab-members')" class="sidebar-link ${isAdminTabActive('tab-members') ? 'active' : ''}"><i class="fa-solid fa-users-gear"></i><span> إدارة شجرة الأعضاء</span></a>` : ''}
                         ${perms.viewStats ? `<a onclick="openAdminTab('tab-stats')" class="sidebar-link ${isAdminTabActive('tab-stats') ? 'active' : ''}"><i class="fa-solid fa-chart-pie"></i><span> لوحة الإحصائيات</span></a>` : ''}
+                        ${perms.viewStats ? `<a onclick="openAdminTab('tab-analytics')" class="sidebar-link ${isAdminTabActive('tab-analytics') ? 'active' : ''}"><i class="fa-solid fa-chart-line"></i><span> لوحة التحليلات</span></a>` : ''}
                         ${(currentUser.username === 'admin' || isSuperAdmin()) ? `<a onclick="openAdminTab('tab-add-admin')" class="sidebar-link ${isAdminTabActive('tab-add-admin') ? 'active' : ''}"><i class="fa-solid fa-user-shield"></i><span> إضافة مشرف</span></a>` : ''}
                         ${isSuperAdmin() ? `<a onclick="openAdminTab('tab-manage-admins')" class="sidebar-link ${isAdminTabActive('tab-manage-admins') ? 'active' : ''}"><i class="fa-solid fa-user-tie"></i><span> إدارة المسؤولين</span></a>` : ''}
                         ${perms.manageMembers ? `<a onclick="openAdminTab('tab-pending-requests')" class="sidebar-link ${isAdminTabActive('tab-pending-requests') ? 'active' : ''}"><i class="fa-solid fa-user-plus"></i><span> طلبات العضوية</span></a>` : ''}
@@ -7420,6 +7946,8 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
             if (pillBtn('pill-pending-requests')) pillBtn('pill-pending-requests').style.display = perms.manageMembers ? '' : 'none';
             if (pillBtn('pill-password-requests')) pillBtn('pill-password-requests').style.display = isMainAdmin ? '' : 'none';
             if (pillBtn('pill-reports')) pillBtn('pill-reports').style.display = isMainAdmin ? '' : 'none';
+            // لوحة التحليلات: متاحة لكل المسؤولين الذين لديهم صلاحية viewStats
+            if (pillBtn('pill-analytics')) pillBtn('pill-analytics').style.display = perms.viewStats ? '' : 'none';
 
             if (isMainAdmin) renderPasswordRequestsTab();
             if (isSuperAdmin()) renderManageAdminsTable();
@@ -8336,6 +8864,189 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
             });
         }
 
+        // ============================================================
+        // لوحة التحليلات (Analytics Dashboard) — محرّكات النشاط + سجل الأخطاء
+        // ============================================================
+        let _analyticsCharts = { messages: null, peakHours: null };
+
+        async function loadAnalyticsDashboard() {
+            if (!currentUser || !currentUser.isAdmin) return;
+            try {
+                await loadChartJs();
+                const users = getUsers();
+                const adminChats = getAdminChats();
+                const directChats = getDirectChats();
+
+                // ===== عدّادات عامة =====
+                let totalSupport = 0, totalDirect = 0;
+                const memberActivity = {}; // {userId: {support: N, direct: M}}
+                const last7Days = []; // ['YYYY-MM-DD', ...] للأيام السبعة الأخيرة
+                const dayLabels = [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const key = d.toISOString().slice(0, 10);
+                    last7Days.push(key);
+                    dayLabels.push(d.toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric' }));
+                }
+                const messagesByDay = {}; // {dateKey: count}
+                last7Days.forEach(k => messagesByDay[k] = 0);
+                const hourBuckets = new Array(24).fill(0); // عدد الرسائل لكل ساعة من اليوم
+
+                // تجميع رسائل الدعم
+                adminChats.forEach(c => {
+                    (c.messages || []).forEach(m => {
+                        totalSupport++;
+                        if (m.senderId) {
+                            if (!memberActivity[m.senderId]) memberActivity[m.senderId] = { support: 0, direct: 0 };
+                            memberActivity[m.senderId].support++;
+                        }
+                        const ts = m.timestamp;
+                        if (ts) {
+                            const d = new Date(ts);
+                            const key = d.toISOString().slice(0, 10);
+                            if (messagesByDay.hasOwnProperty(key)) messagesByDay[key]++;
+                            const h = d.getHours();
+                            if (h >= 0 && h < 24) hourBuckets[h]++;
+                        }
+                    });
+                });
+                // تجميع رسائل المحادثات المباشرة
+                directChats.forEach(c => {
+                    (c.messages || []).forEach(m => {
+                        if (m.type === 'contact_request') return; // لا تُعدّ رسالة فعلية
+                        totalDirect++;
+                        const sid = m.senderId;
+                        if (sid) {
+                            if (!memberActivity[sid]) memberActivity[sid] = { support: 0, direct: 0 };
+                            memberActivity[sid].direct++;
+                        }
+                        const ts = m.timestamp;
+                        if (ts) {
+                            const d = new Date(ts);
+                            const key = d.toISOString().slice(0, 10);
+                            if (messagesByDay.hasOwnProperty(key)) messagesByDay[key]++;
+                            const h = d.getHours();
+                            if (h >= 0 && h < 24) hourBuckets[h]++;
+                        }
+                    });
+                });
+
+                // تحديث العدّادات
+                const elC = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+                elC('analytics-total-support', totalSupport);
+                elC('analytics-total-direct', totalDirect);
+                elC('analytics-active-chats', directChats.filter(c => (c.messages || []).length > 0).length);
+                elC('analytics-online-now', users.filter(u => isUserOnline(u)).length);
+
+                // ===== رسم بياني: حجم الرسائل خلال آخر 7 أيام =====
+                if (_analyticsCharts.messages) _analyticsCharts.messages.destroy();
+                const ctxMsg = document.getElementById('analyticsMessagesChart');
+                if (ctxMsg) {
+                    _analyticsCharts.messages = new Chart(ctxMsg.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: dayLabels,
+                            datasets: [
+                                { label: 'رسائل الدعم', data: last7Days.map(k => {
+                                    let n = 0;
+                                    adminChats.forEach(c => (c.messages || []).forEach(m => {
+                                        if (m.timestamp && m.timestamp.slice(0,10) === k) n++;
+                                    }));
+                                    return n;
+                                }), borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.12)', tension: 0.35, fill: true },
+                                { label: 'رسائل مباشرة', data: last7Days.map(k => {
+                                    let n = 0;
+                                    directChats.forEach(c => (c.messages || []).forEach(m => {
+                                        if (m.type === 'contact_request') return;
+                                        if (m.timestamp && m.timestamp.slice(0,10) === k) n++;
+                                    }));
+                                    return n;
+                                }), borderColor: '#c8102e', backgroundColor: 'rgba(200,16,46,0.12)', tension: 0.35, fill: true }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { family: 'Cairo' } } } },
+                            scales: { y: { beginAtZero: true, ticks: { font: { family: 'Cairo' } } }, x: { ticks: { font: { family: 'Cairo' } } } } }
+                    });
+                }
+
+                // ===== رسم بياني: ساعات الذروة (Bar chart لكل ساعة) =====
+                if (_analyticsCharts.peakHours) _analyticsCharts.peakHours.destroy();
+                const ctxPeak = document.getElementById('analyticsPeakHoursChart');
+                if (ctxPeak) {
+                    _analyticsCharts.peakHours = new Chart(ctxPeak.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00'),
+                            datasets: [{ label: 'عدد الرسائل', data: hourBuckets, backgroundColor: '#d97706', borderRadius: 3 }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { font: { family: 'Cairo' } } },
+                                x: { ticks: { font: { family: 'Cairo', size: 9 }, maxRotation: 90, minRotation: 45 } } } }
+                    });
+                }
+
+                // ===== جدول: أكثر 10 أعضاء نشاطاً =====
+                const topMembers = Object.entries(memberActivity)
+                    .map(([uid, counts]) => {
+                        const u = users.find(x => String(x.id) === String(uid));
+                        return { user: u, support: counts.support, direct: counts.direct, total: counts.support + counts.direct };
+                    })
+                    .filter(x => x.user && !x.user.isAdmin)
+                    .sort((a, b) => b.total - a.total)
+                    .slice(0, 10);
+                const topTable = document.getElementById('analytics-top-members-table');
+                if (topTable) {
+                    topTable.innerHTML = topMembers.length > 0
+                        ? topMembers.map((x, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(x.user.profileNumber || '')}</td><td>${escapeHtml(x.user.fullName || '')}</td><td>${x.support}</td><td>${x.direct}</td><td><strong>${x.total}</strong></td></tr>`).join('')
+                        : '<tr><td colspan="6" class="text-center text-muted py-3">لا يوجد نشاط بعد.</td></tr>';
+                }
+
+                // ===== سجل أخطاء JavaScript =====
+                renderErrorLogTable();
+            } catch (e) {
+                logErrorToStore('analytics_load', e.message, e.stack, '');
+                showAlert('تعذّر تحميل لوحة التحليلات: ' + e.message, 'danger');
+            }
+        }
+
+        function renderErrorLogTable() {
+            const table = document.getElementById('analytics-error-log-table');
+            if (!table) return;
+            try {
+                const raw = localStorage.getItem(RAWAA_ERROR_LOG_KEY);
+                const arr = raw ? JSON.parse(raw) : [];
+                if (arr.length === 0) {
+                    table.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">لا توجد أخطاء مسجّلة.</td></tr>';
+                    return;
+                }
+                // عرض الأحدث أولاً
+                const rowsHtml = arr.slice().reverse().map(e => {
+                    const d = new Date(e.ts);
+                    const typeColor = e.type === 'uncaught' ? '#dc2626'
+                        : e.type === 'unhandled_promise' ? '#d97706'
+                        : '#6b7280';
+                    return `<tr>
+                        <td class="small">${d.toLocaleString('ar-EG')}</td>
+                        <td><span class="badge" style="background:${typeColor};">${escapeHtml(e.type)}</span></td>
+                        <td class="small" style="max-width: 320px; word-break: break-word;">${escapeHtml(e.msg)}</td>
+                        <td class="small text-muted">${escapeHtml(e.ctx || e.url || '')}</td>
+                    </tr>`;
+                }).join('');
+                table.innerHTML = rowsHtml;
+            } catch (e) { /* تجاهل */ }
+        }
+
+        window.clearErrorLog = function() {
+            if (!confirm('مسح سجل الأخطاء بالكامل؟')) return;
+            localStorage.removeItem(RAWAA_ERROR_LOG_KEY);
+            renderErrorLogTable();
+            showToast('تم مسح سجل الأخطاء', 'success');
+        };
+        window.loadAnalyticsDashboard = loadAnalyticsDashboard;
+
         // ==================== مستمعات قوة كلمة المرور ====================
         document.getElementById('reg-password').addEventListener('input', function() {
             updatePasswordStrength('reg-password', 'reg-password-strength', 'reg-password-label');
@@ -8389,6 +9100,119 @@ body.dark-mode .toast-enhanced { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
             activeDirectChatId = null;
             activeDirectChatReadOnly = false;
             _lastOpenDirectChatMsgCount = null;
+        });
+
+        // ============================================================
+        // مجموعة تحسينات المرحلة الثالثة: Title ديناميكي + تتبّع الأخطاء + اختصارات لوحة المفاتيح
+        // ============================================================
+
+        // ==================== Title ديناميكي بعدّاد الرسائل غير المقروءة ====================
+        // عند وصول رسالة جديدة والصفحة غير مرئية (مفتوحة في تبويب خلفي)، يُحدَّث عنوان
+        // التبويب ليعرض عدد الرسائل غير المقروءة: (3) ميثاق. عند العودة للتبويب يُصفَّر العدّاد.
+        let _unreadMsgCount = 0;
+        const _originalDocTitle = document.title || 'ميثاق';
+        function updateDocTitle() {
+            try {
+                document.title = _unreadMsgCount > 0
+                    ? `(${_unreadMsgCount > 99 ? '99+' : _unreadMsgCount}) ${_originalDocTitle}`
+                    : _originalDocTitle;
+            } catch (e) { /* تجاهل */ }
+        }
+        // عند وصول رسالة جديدة (مستلمة في renderChatUI)، نزيد العدّاد إن كانت الصفحة مخفية
+        function bumpUnreadMsgCount(delta) {
+            _unreadMsgCount = Math.max(0, _unreadMsgCount + delta);
+            updateDocTitle();
+        }
+        // عند العودة للتبويب: تصفير العدّاد
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                _unreadMsgCount = 0;
+                updateDocTitle();
+            }
+        });
+
+        // ==================== تتبّع الأخطاء (Error Tracking) ====================
+        // يجمع أخطاء JS غير المعالجة ووعود Firebase المرفوضة، ويُرسلها إلى Umami (إن توفّر)
+        // عبر event مخصّص، ويُسجّلها في localStorage لمراجعتها لاحقاً من لوحة التحكم.
+        const RAWAA_ERROR_LOG_KEY = 'rawaaErrorLog';
+        function logErrorToStore(type, message, stack, context) {
+            try {
+                const entry = {
+                    ts: Date.now(),
+                    type: type,
+                    msg: String(message || '').slice(0, 500),
+                    stack: String(stack || '').slice(0, 1000),
+                    ctx: String(context || '').slice(0, 200),
+                    ua: navigator.userAgent.slice(0, 200),
+                    url: location.pathname
+                };
+                const raw = localStorage.getItem(RAWAA_ERROR_LOG_KEY);
+                const arr = raw ? JSON.parse(raw) : [];
+                arr.push(entry);
+                // حد أقصى 50 خطأ
+                if (arr.length > 50) arr.splice(0, arr.length - 50);
+                localStorage.setItem(RAWAA_ERROR_LOG_KEY, JSON.stringify(arr));
+                // إرسال إلى Umami إن توفّر
+                if (window.umami) {
+                    try { window.umami.track('js_error', { type: type, msg: entry.msg }); } catch (_) {}
+                }
+            } catch (e) { /* تجاهل */ }
+        }
+        window.addEventListener('error', function(e) {
+            logErrorToStore('uncaught', e.message, e.error && e.error.stack, e.filename + ':' + e.lineno);
+        });
+        window.addEventListener('unhandledrejection', function(e) {
+            const reason = e.reason;
+            logErrorToStore(
+                'unhandled_promise',
+                (reason && (reason.message || reason.toString())) || 'Promise rejection',
+                (reason && reason.stack) || '',
+                ''
+            );
+        });
+        // زر في لوحة التحكم لعرض آخر الأخطاء المسجّلة (انظر قسم لوحة التحكم التحليلية)
+
+        // ==================== اختصارات لوحة المفاتيح ====================
+        // Ctrl+Enter → إرسال الرسالة في أي نافذة دردشة مفتوحة
+        // Esc → إغلاق أي نافذة منبثقة (modal) مفتوحة
+        // Ctrl+K → فتح/إغلاق الشريط الجانبي
+        // Ctrl+/ → عرض الاختصارات في toast
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Enter: إرسال رسالة في الدردشة المفتوحة
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                const supportModal = document.getElementById('supportChatModal');
+                const directModal = document.getElementById('directChatModal');
+                if (supportModal && supportModal.classList.contains('show')) {
+                    e.preventDefault();
+                    if (window.sendSupportChatMessage) window.sendSupportChatMessage();
+                    return;
+                }
+                if (directModal && directModal.classList.contains('show')) {
+                    e.preventDefault();
+                    if (window.sendDirectChatMessage) window.sendDirectChatMessage();
+                    return;
+                }
+            }
+            // Esc: إغلاق أي modal مفتوح
+            if (e.key === 'Escape') {
+                const openModal = document.querySelector('.modal.show');
+                if (openModal) {
+                    const inst = bootstrap.Modal.getInstance(openModal);
+                    if (inst) { e.preventDefault(); inst.hide(); }
+                }
+            }
+            // Ctrl+K: تبديل الشريط الجانبي
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+                e.preventDefault();
+                if (window.toggleSidebar) window.toggleSidebar();
+                return;
+            }
+            // Ctrl+/: عرض قائمة الاختصارات
+            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                e.preventDefault();
+                showToast('اختصارات لوحة المفاتيح:<br>• <b>Ctrl+Enter</b>: إرسال الرسالة<br>• <b>Esc</b>: إغلاق النافذة المنبثقة<br>• <b>Ctrl+K</b>: تبديل الشريط الجانبي<br>• <b>Ctrl+/</b>: عرض هذا الدليل', 'info', 6000);
+                return;
+            }
         });
 
         // ==================== بدء التطبيق ====================
