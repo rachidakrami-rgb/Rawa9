@@ -888,6 +888,65 @@
         .chat-bubble-time { font-size: 0.68rem; opacity: 0.65; margin-top: 0.2rem; text-align: right; }
         .chat-input-footer { gap: 0.5rem; }
         .chat-input-footer input { flex: 1; }
+        /* ===== Voice message recording button + bubble ===== */
+        .voice-record-btn {
+            flex-shrink: 0;
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            padding: 0;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+        }
+        .voice-record-btn.recording {
+            background: #dc3545 !important;
+            color: #fff !important;
+            border-color: #dc3545 !important;
+            animation: voicePulse 1.2s ease-in-out infinite;
+        }
+        @keyframes voicePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
+        }
+        .voice-recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.82rem;
+            color: #dc3545;
+            font-weight: 600;
+            padding: 0 0.5rem;
+            flex: 1;
+        }
+        .voice-recording-indicator.active { display: inline-flex; }
+        .voice-recording-indicator .rec-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #dc3545; animation: recBlink 1s ease-in-out infinite;
+        }
+        @keyframes recBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .voice-recording-indicator .rec-timer { font-variant-numeric: tabular-nums; }
+        .chat-voice-bubble {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 200px;
+        }
+        .chat-voice-bubble audio {
+            width: 100%;
+            height: 36px;
+            border-radius: 8px;
+        }
+        .chat-voice-bubble .voice-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.68rem;
+            opacity: 0.75;
+        }
+        body.dark-mode .chat-voice-bubble audio { color-scheme: light; }
 
 /* ===== أنماط تبويبات طلبات الاهتمام (Pills) ===== */
 .requests-pill-nav {
@@ -1962,6 +2021,8 @@ body.dark-mode .chat-contact-accepted-bubble {
                 </div>
                 <div class="modal-footer chat-input-footer">
                     <input type="text" id="supportChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendSupportChatMessage();}">
+                    <div class="voice-recording-indicator" id="supportVoiceIndicator"><span class="rec-dot"></span><span>جاري التسجيل</span><span class="rec-timer" id="supportVoiceTimer">0:00</span></div>
+                    <button type="button" class="btn btn-outline-secondary voice-record-btn" id="supportVoiceBtn" onclick="toggleVoiceRecording('support')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
                     <button type="button" class="btn btn-brand" onclick="sendSupportChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -2009,6 +2070,8 @@ body.dark-mode .chat-contact-accepted-bubble {
                 </div>
                 <div class="modal-footer chat-input-footer" id="directChatInputRow">
                     <input type="text" id="directChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendDirectChatMessage();}">
+                    <div class="voice-recording-indicator" id="directVoiceIndicator"><span class="rec-dot"></span><span>جاري التسجيل</span><span class="rec-timer" id="directVoiceTimer">0:00</span></div>
+                    <button type="button" class="btn btn-outline-secondary voice-record-btn" id="directVoiceBtn" onclick="toggleVoiceRecording('direct')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
                     <button type="button" class="btn btn-brand" onclick="sendDirectChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -2031,8 +2094,43 @@ body.dark-mode .chat-contact-accepted-bubble {
             messagingSenderId: "330296859647",
             appId: "1:330296859647:web:381504998d15bdbdaba5ca"
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        // Guard: Edge Tracking Prevention (Strict mode) can block gstatic.com Firebase scripts.
+        // If firebase is undefined here, calling initializeApp() would throw ReferenceError and
+        // crash the ENTIRE inline <script> block — leaving all window.X = function(){} undefined,
+        // which is why "buttons don't work" on Edge. This guard + retry prevents that crash.
+        let db = null;
+        let _firebaseReady = false;
+        (function initFirebaseSafe() {
+            if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+                try {
+                    firebase.initializeApp(firebaseConfig);
+                    db = firebase.firestore();
+                    _firebaseReady = true;
+                } catch (e) { console.error('Firebase init error:', e); }
+            } else {
+                console.warn('Firebase SDK not loaded yet (possibly blocked by Edge Tracking Prevention). Will retry...');
+            }
+        })();
+        // Retry Firebase init every 1.5s for up to 15s in case the CDN script loads late
+        (function retryFirebase() {
+            if (_firebaseReady) return;
+            let attempts = 0;
+            const timer = setInterval(function() {
+                attempts++;
+                if (_firebaseReady) { clearInterval(timer); return; }
+                if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+                    try {
+                        firebase.initializeApp(firebaseConfig);
+                        db = firebase.firestore();
+                        _firebaseReady = true;
+                        clearInterval(timer);
+                        console.log('Firebase initialized on retry #' + attempts);
+                        if (typeof checkFirestoreReadyAndRender === 'function') checkFirestoreReadyAndRender();
+                    } catch (e) { /* ignore duplicate init */ }
+                }
+                if (attempts >= 10) { clearInterval(timer); }
+            }, 1500);
+        })();
 
         // ==================== إعداد EmailJS (للتحقق من البريد الإلكتروني عبر كود) ====================
         // ⚠️ يجب استبدال القيم الثلاث التالية ببياناتك الخاصة من حسابك على emailjs.com قبل التشغيل:
@@ -3173,6 +3271,182 @@ body.dark-mode .chat-contact-accepted-bubble {
             if (changed) saveAdminChats(chats);
         }
 
+        // ==================== الرسائل الصوتية (Voice Messages) ====================
+        // تسجيل صوتي عبر MediaRecorder API ثم رفع إلى Cloudinary (preset: Rawa9voice, folder: voice_messages)
+        const CLOUDINARY_VOICE_PRESET = 'Rawa9voice';
+        const CLOUDINARY_VOICE_FOLDER = 'voice_messages';
+        let _voiceMediaRecorder = null;
+        let _voiceChunks = [];
+        let _voiceStream = null;
+        let _voiceActiveChatType = null; // 'support' or 'direct'
+        let _voiceTimerInterval = null;
+        let _voiceStartTime = 0;
+
+        function _fmtVoiceTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return m + ':' + (s < 10 ? '0' + s : s);
+        }
+
+        function _setVoiceBtnState(chatType, recording) {
+            const btn = document.getElementById(chatType + 'VoiceBtn');
+            const indicator = document.getElementById(chatType + 'VoiceIndicator');
+            const timer = document.getElementById(chatType + 'VoiceTimer');
+            if (btn) {
+                if (recording) {
+                    btn.classList.add('recording');
+                    btn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+                    btn.title = 'إيقاف وإرسال';
+                } else {
+                    btn.classList.remove('recording');
+                    btn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                    btn.title = 'رسالة صوتية';
+                }
+            }
+            if (indicator) indicator.classList.toggle('active', recording);
+            if (timer) timer.textContent = '0:00';
+        }
+
+        window.toggleVoiceRecording = function(chatType) {
+            // If already recording, stop and send
+            if (_voiceMediaRecorder && _voiceMediaRecorder.state === 'recording') {
+                _voiceMediaRecorder.stop();
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showAlert('متصفحك لا يدعم تسجيل الرسائل الصوتية. جرّب متصفحاً حديثاً.', 'danger');
+                return;
+            }
+            _voiceActiveChatType = chatType;
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+                _voiceStream = stream;
+                _voiceChunks = [];
+                // Pick the best supported mime type
+                var options = {};
+                var candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+                for (var i = 0; i < candidates.length; i++) {
+                    if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(candidates[i])) {
+                        options.mimeType = candidates[i]; break;
+                    }
+                }
+                try {
+                    _voiceMediaRecorder = new MediaRecorder(stream, options);
+                } catch (e) {
+                    _voiceMediaRecorder = new MediaRecorder(stream);
+                }
+                _voiceMediaRecorder.ondataavailable = function(e) {
+                    if (e.data && e.data.size > 0) _voiceChunks.push(e.data);
+                };
+                _voiceMediaRecorder.onstop = function() {
+                    var duration = Math.round((Date.now() - _voiceStartTime) / 1000);
+                    if (_voiceTimerInterval) { clearInterval(_voiceTimerInterval); _voiceTimerInterval = null; }
+                    _setVoiceBtnState(_voiceActiveChatType, false);
+                    if (_voiceStream) { _voiceStream.getTracks().forEach(function(t) { t.stop(); }); _voiceStream = null; }
+                    if (_voiceChunks.length === 0) return;
+                    var blob = new Blob(_voiceChunks, { type: _voiceMediaRecorder.mimeType || 'audio/webm' });
+                    // Min 1 second, max 120 seconds
+                    if (duration < 1) { showAlert('الرسالة قصيرة جداً.', 'warning'); return; }
+                    if (duration > 120) { showAlert('الحد الأقصى للتسجيل هو دقيقتان.', 'warning'); return; }
+                    _uploadVoiceAndSend(blob, duration, _voiceActiveChatType);
+                };
+                _voiceMediaRecorder.start();
+                _voiceStartTime = Date.now();
+                _setVoiceBtnState(chatType, true);
+                _voiceTimerInterval = setInterval(function() {
+                    var elapsed = Math.round((Date.now() - _voiceStartTime) / 1000);
+                    var tEl = document.getElementById(chatType + 'VoiceTimer');
+                    if (tEl) tEl.textContent = _fmtVoiceTime(elapsed);
+                    if (elapsed >= 120 && _voiceMediaRecorder && _voiceMediaRecorder.state === 'recording') {
+                        _voiceMediaRecorder.stop();
+                    }
+                }, 500);
+            }).catch(function(err) {
+                showAlert('تعذر الوصول إلى الميكروفون: ' + (err.message || err.name || 'خطأ غير معروف'), 'danger');
+            });
+        };
+
+        function _uploadVoiceAndSend(blob, duration, chatType) {
+            // Show upload progress in the chat input
+            var sendBtn = document.querySelector('#' + (chatType === 'support' ? 'supportChatModal' : 'directChatModal') + ' .chat-input-footer .btn-brand');
+            if (sendBtn) { sendBtn.disabled = true; sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
+            var formData = new FormData();
+            formData.append('file', blob, 'voice_' + Date.now() + '.webm');
+            formData.append('upload_preset', CLOUDINARY_VOICE_PRESET);
+            formData.append('folder', CLOUDINARY_VOICE_FOLDER);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/auto/upload', true);
+            xhr.onload = function() {
+                if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>'; }
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        var url = resp.secure_url || resp.url;
+                        if (!url) { showAlert('فشل رفع الرسالة الصوتية.', 'danger'); return; }
+                        if (chatType === 'support') {
+                            _sendSupportVoiceMessage(url, duration);
+                        } else {
+                            _sendDirectVoiceMessage(url, duration);
+                        }
+                    } catch (e) { showAlert('خطأ في معالجة استجابة الرفع.', 'danger'); }
+                } else {
+                    showAlert('فشل رفع الرسالة الصوتية. تحقق من اتصال الإنترنت.', 'danger');
+                }
+            };
+            xhr.onerror = function() {
+                if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>'; }
+                showAlert('خطأ في الشبكة أثناء رفع الرسالة الصوتية.', 'danger');
+            };
+            xhr.send(formData);
+        }
+
+        function _sendSupportVoiceMessage(voiceUrl, duration) {
+            if (activeSupportChatMemberId === null || !currentUser) return;
+            var chats = getAdminChats();
+            var chat = chats.find(function(c) { return c.memberId === activeSupportChatMemberId; }) ||
+                (function() { var c = { id: chats.length > 0 ? Math.max.apply(null, chats.map(function(x) { return x.id; })) + 1 : 1, memberId: activeSupportChatMemberId, messages: [] }; chats.push(c); return c; })();
+            chat.messages.push({
+                senderRole: currentUser.isAdmin ? 'admin' : 'member',
+                senderId: currentUser.id,
+                senderName: currentUser.fullName,
+                type: 'voice',
+                voiceUrl: voiceUrl,
+                voiceDuration: duration,
+                timestamp: new Date().toISOString(),
+                seenByAdmin: currentUser.isAdmin ? true : false,
+                seenByMember: currentUser.isAdmin ? false : true
+            });
+            if (chat.messages.length > 50) chat.messages = chat.messages.slice(-50);
+            saveAdminChats(chats);
+            renderSupportChatThread();
+            if (currentUser.isAdmin) sendPushToUser(activeSupportChatMemberId, '🎤 رسالة صوتية من الإدارة', 'لديك رسالة صوتية جديدة في محادثة الدعم', { type: 'supportChat', url: './index.html' });
+            else sendPushToAdmins('🎤 رسالة صوتية جديدة', 'رسالة صوتية جديدة من ' + (currentUser.fullName || ''), { type: 'supportChat', url: './index.html' });
+        }
+
+        function _sendDirectVoiceMessage(voiceUrl, duration) {
+            if (activeDirectChatId === null || !currentUser || currentUser.isAdmin) return;
+            var chats = getDirectChats();
+            var chat = chats.find(function(c) { return c.id === activeDirectChatId; });
+            if (!chat) return;
+            if (hasReportBetween(chat.userAId, chat.userBId) || hasCutoffBetween(chat.userAId, chat.userBId)) {
+                showAlert('لا يمكن إرسال رسائل جديدة، تم إيقاف التواصل بين الطرفين.', 'danger');
+                return;
+            }
+            chat.messages.push({ senderId: currentUser.id, type: 'voice', voiceUrl: voiceUrl, voiceDuration: duration, timestamp: new Date().toISOString() });
+            if (chat.messages.length > 50) chat.messages = chat.messages.slice(-50);
+            saveDirectChats(chats);
+            renderDirectChatThread();
+            var otherId = chat.userAId === currentUser.id ? chat.userBId : chat.userAId;
+            sendPushToUser(otherId, '🎤 رسالة صوتية جديدة', 'رسالة صوتية جديدة من ' + (currentUser.profileNumber || currentUser.fullName), { type: 'directChat', url: './index.html' });
+        }
+
+        function _renderVoiceBubble(m) {
+            var dur = m.voiceDuration ? _fmtVoiceTime(m.voiceDuration) : '';
+            return '<div class="chat-voice-bubble">'
+                + '<audio controls preload="metadata" src="' + escapeHtml(m.voiceUrl) + '"></audio>'
+                + '<div class="voice-meta"><i class="fa-solid fa-microphone"></i> رسالة صوتية' + (dur ? ' · ' + dur : '') + '</div>'
+                + '</div>';
+        }
+
         function renderSupportChatThread() {
             const titleEl = document.getElementById('supportChatModalTitle');
             const bodyEl = document.getElementById('supportChatMessages');
@@ -3189,13 +3463,14 @@ body.dark-mode .chat-contact-accepted-bubble {
             } else {
                 bodyEl.innerHTML = messages.map(m => {
                     const mine = currentUser.isAdmin ? m.senderRole === 'admin' : m.senderRole === 'member';
+                    const contentHtml = m.type === 'voice' ? _renderVoiceBubble(m) : `<div class="chat-bubble-text">${escapeHtml(m.text || '')}</div>`;
                     return `
                             <div class="chat-bubble-row ${mine ? 'mine' : 'theirs'}">
                                 <div class="chat-bubble ${mine ? 'chat-bubble-mine' : 'chat-bubble-theirs'} ${m.isAlert ? 'chat-bubble-alert' : ''}">
                                     ${m.isAlert ? '<div class="chat-bubble-alert-badge"><i class="fa-solid fa-bell"></i> تنبيه إداري</div>' : ''}
                                     ${m.senderRole === 'admin' && currentUser.isAdmin === false ? '<div class="chat-bubble-sender">الإدارة</div>' : ''}
                                     ${m.senderRole === 'member' && currentUser.isAdmin === true ? `<div class="chat-bubble-sender">${escapeHtml(m.senderName || 'العضو')}</div>` : ''}
-                                    <div class="chat-bubble-text">${escapeHtml(m.text)}</div>
+                                    ${contentHtml}
                                     <div class="chat-bubble-time">${formatDateTimeGlobal(m.timestamp)}</div>
                                 </div>
                             </div>
@@ -3375,7 +3650,8 @@ body.dark-mode .chat-contact-accepted-bubble {
                     const sender = allUsers.find(u => u.id === m.senderId);
                     const senderName = sender ? sender.profileNumber : '؟';
                     const timeStr = formatDateTimeGlobal(m.timestamp);
-                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}"><div class="chat-bubble-sender">${escapeHtml(senderName)}</div><div class="chat-bubble-text">${escapeHtml(m.text)}</div><div class="chat-bubble-time">${timeStr}</div></div></div>`;
+                    const contentHtml = m.type === 'voice' ? _renderVoiceBubble(m) : `<div class="chat-bubble-text">${escapeHtml(m.text || '')}</div>`;
+                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}"><div class="chat-bubble-sender">${escapeHtml(senderName)}</div>${contentHtml}<div class="chat-bubble-time">${timeStr}</div></div></div>`;
                 }).join('');
             }
             bodyEl.scrollTop = bodyEl.scrollHeight;
