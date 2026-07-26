@@ -4782,11 +4782,17 @@ body.dark-mode .chat-contact-accepted-bubble {
 
             if (refSearch) profiles = profiles.filter(u => u.profileNumber.toLowerCase().includes(refSearch));
 
-            // عرض الملفات بترتيب عشوائي في كل مرة (دون فرز حسب المعرف أو الجنس)
-            for (let i = profiles.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [profiles[i], profiles[j]] = [profiles[j], profiles[i]];
-            }
+            // ترتيب ثابت حسب الرقم المرجعي، حتى لا يتغيّر ترتيب البطاقات عشوائياً
+            // عند كل تحديث تلقائي من Firestore (onSnapshot / presence heartbeat) أو
+            // عند كل استدعاء لـ renderUI(). الترتيب العشوائي السابق كان يجعل البطاقات
+            // "تتنقل" أمام المستخدم بشكل مزعج في كل لحظة.
+            profiles.sort((a, b) => {
+                const an = (a.profileNumber || '').toString();
+                const bn = (b.profileNumber || '').toString();
+                if (an < bn) return -1;
+                if (an > bn) return 1;
+                return 0;
+            });
 
             if (profiles.length === 0) {
                 container.innerHTML =
