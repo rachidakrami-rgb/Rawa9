@@ -4065,6 +4065,9 @@ body.dark-mode .chat-contact-accepted-bubble {
                 const found = users.find(u => u.sessionToken && u.sessionToken === savedToken);
                 if (found && found.status !== 'flagged') {
                     currentUser = found;
+                    // مسح فوري للإشعارات المقروءة القديمة (> 24 ساعة) عند استعادة الجلسة،
+                    // حتى لا تعود للظهور في قائمة الإشعارات عند كل تسجيل دخول جديد.
+                    try { autoPruneOldReadNotifications(); } catch (e) {}
                     startPresenceHeartbeat();
                     initFCM();
                     if (currentUser.isAdmin) {
@@ -5773,11 +5776,25 @@ body.dark-mode .chat-contact-accepted-bubble {
             } catch (e) { return new Set(); }
         }
 
+        // خريطة الطوابع الزمنية لكل مفتاح إشعار قُرئ (لتتبّع عمر الإشعار المقروء
+        // ومسح المقروء منها تلقائياً بعد فترة، حتى لا تعود للظهور في الجلسات اللاحقة).
+        function getNotifSeenTimestamps() {
+            if (!currentUser) return {};
+            try {
+                const raw = localStorage.getItem('rawaaNotifSeenTs_' + currentUser.id);
+                return raw ? JSON.parse(raw) : {};
+            } catch (e) { return {}; }
+        }
+
         function markNotifSeen(key) {
             if (!currentUser) return;
             const set = getNotifSeenSet();
             set.add(key);
             localStorage.setItem('rawaaNotifSeen_' + currentUser.id, JSON.stringify(Array.from(set)));
+            // سجّل وقت القراءة لإمكانية المسح التلقائي لاحقاً
+            const ts = getNotifSeenTimestamps();
+            ts[key] = Date.now();
+            try { localStorage.setItem('rawaaNotifSeenTs_' + currentUser.id, JSON.stringify(ts)); } catch (e) {}
         }
 
         // ==================== تنظيف الإشعارات القديمة المقروءة ====================
@@ -5794,14 +5811,56 @@ body.dark-mode .chat-contact-accepted-bubble {
             localStorage.setItem('rawaaNotifCleared_' + currentUser.id, JSON.stringify(Array.from(set)));
         }
 
+        // مسح تلقائي: أي إشعار قُرئ منذ أكثر من READ_NOTIF_TTL_MS يُنقل إلى مجموعة
+        // "الممسوحة" بشكل دائم، فلا يعود للظهور في الجلسات القادمة. هذا يحل مشكلة
+        // "الإشعارات القديمة تتجدد في كل تسجيل دخول".
+        const READ_NOTIF_TTL_MS = 24 * 60 * 60 * 1000; // 24 ساعة
+        function autoPruneOldReadNotifications() {
+            if (!currentUser) return;
+            const ts = getNotifSeenTimestamps();
+            const now = Date.now();
+            const cleared = getNotifClearedSet();
+            let pruned = false;
+            Object.keys(ts).forEach(k => {
+                if (now - (ts[k] || 0) > READ_NOTIF_TTL_MS) {
+                    cleared.add(k);
+                    delete ts[k];
+                    pruned = true;
+                }
+            });
+            if (pruned) {
+                saveNotifClearedSet(cleared);
+                try { localStorage.setItem('rawaaNotifSeenTs_' + currentUser.id, JSON.stringify(ts)); } catch (e) {}
+                // نظّف أيضاً المفاتيح من seenSet القديم
+                const seen = getNotifSeenSet();
+                cleared.forEach(k => seen.delete(k));
+                localStorage.setItem('rawaaNotifSeen_' + currentUser.id, JSON.stringify(Array.from(seen)));
+            }
+        }
+
+        // مسح داخلي: يحذف المفاتيح المعطاة من seenSet و seenTimestamps نهائياً
+        // (لأنها انتقلت إلى clearedSet الدائمي، فلا داعي لإبقائها في seen*).
+        function _purgeKeysFromSeenState(keysArr) {
+            if (!currentUser || !keysArr.length) return;
+            const seen = getNotifSeenSet();
+            const ts = getNotifSeenTimestamps();
+            keysArr.forEach(k => { seen.delete(k); delete ts[k]; });
+            try {
+                localStorage.setItem('rawaaNotifSeen_' + currentUser.id, JSON.stringify(Array.from(seen)));
+                localStorage.setItem('rawaaNotifSeenTs_' + currentUser.id, JSON.stringify(ts));
+            } catch (e) {}
+        }
+
         window.clearReadNotifications = function(e) {
             if (e) e.stopPropagation();
             const seen = getNotifSeenSet();
             const cleared = getNotifClearedSet();
             // نُضيف مفاتيح الإشعارات المقروءة الحالية إلى مجموعة "الممسوحة"، فتُخفى من القائمة.
             // ولا نُضيف غير المقروءة كي لا نُخفي شيئاً لم يطّلع عليه المستخدم بعد.
-            Object.keys(_lastNotifsMap).forEach(k => { if (seen.has(k)) cleared.add(k); });
+            const toPurge = [];
+            Object.keys(_lastNotifsMap).forEach(k => { if (seen.has(k)) { cleared.add(k); toPurge.push(k); } });
             saveNotifClearedSet(cleared);
+            _purgeKeysFromSeenState(toPurge);
             renderNotifications();
         };
 
@@ -5812,8 +5871,10 @@ body.dark-mode .chat-contact-accepted-bubble {
         window.clearAllNotifications = function(e) {
             if (e) e.stopPropagation();
             const cleared = getNotifClearedSet();
-            Object.keys(_lastNotifsMap).forEach(k => { cleared.add(k); });
+            const keysArr = Object.keys(_lastNotifsMap);
+            keysArr.forEach(k => { cleared.add(k); });
             saveNotifClearedSet(cleared);
+            _purgeKeysFromSeenState(keysArr);
             renderNotifications();
         };
 
@@ -6110,6 +6171,10 @@ body.dark-mode .chat-contact-accepted-bubble {
             }
             wrapper.classList.remove('d-none');
 
+            // مسح تلقائي للإشعارات المقروءة القديمة (> 24 ساعة) لمنع تكرار ظهورها
+            // في كل جلسة تسجيل دخول جديدة — هذا هو جوهر إصلاح "الإشعارات تتجدد".
+            try { autoPruneOldReadNotifications(); } catch (e) {}
+
             // إزالة الإشعارات المُزالة مسبقاً، ومنع تكرار نفس الإشعار (نفس المفتاح) أكثر من مرة
             const clearedSet = getNotifClearedSet();
             const seenKeys = new Set();
@@ -6227,6 +6292,9 @@ body.dark-mode .chat-contact-accepted-bubble {
                 saveUsers(allUsers);
                 currentUser = candidate;
                 localStorage.setItem('rawaaSessionToken', candidate.sessionToken);
+                // مسح فوري للإشعارات المقروءة القديمة (> 24 ساعة) عند تسجيل دخول جديد،
+                // حتى لا تعود للظهور في قائمة الإشعارات بشكل مزعج.
+                try { autoPruneOldReadNotifications(); } catch (e) {}
                 showAlert('تم تسجيل الدخول بنجاح!', 'success');
                 if (currentUser.isAdmin) { switchView('view-admin'); } else { switchView('view-browse'); }
                 renderNotifications();
