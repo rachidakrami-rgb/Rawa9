@@ -31,6 +31,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- ====== Umami Analytics (إحصائيات تحترم الخصوصية — بدون كوكيز) ======
+         يُحمَّل ديناميكياً من لوحة التحكم: تبويب "الإعدادات" → "إحصائيات الموقع".
+         لا حاجة لتعديل هذا الملف: يدخل المسؤول الرئيسي معرّف الموقع (Website ID)
+         من https://cloud.umami.is ويحفظه، فيُحقن سكربت التتبع تلقائياً عند فتح أي صفحة.
+         سياسة CSP في ملف _headers تسمح بالفعل بـ https://cloud.umami.is
+    -->
     <style>
         /* جميع الأنماط السابقة مع الإضافات الجديدة */
         body { font-family: 'Cairo', sans-serif; background-color: #f4f6f9; color: #333; }
@@ -479,44 +485,144 @@
         .profile-picture { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #c8102e; }
         .profile-picture-sm { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #c8102e; }
         .profile-picture-upload { max-width: 150px; max-height: 150px; border-radius: 12px; object-fit: cover; }
-        /* ===== شارة التوثيق الذهبية (هوية مُتحقق منها) ===== */
+        /* ===== شارة التوثيق الذهبية الملكية البرّاقة النابضة (هوية مُتحقق منها) ===== */
+        @keyframes verified-pulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 2px #fff,
+                    0 0 0 0 rgba(255, 215, 0, 0.85),
+                    inset 0 1px 1px rgba(255,255,255,0.75),
+                    inset 0 -2px 3px rgba(120, 80, 0, 0.45),
+                    0 2px 5px rgba(120, 80, 0, 0.4);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow:
+                    0 0 0 2px #fff,
+                    0 0 0 7px rgba(255, 215, 0, 0),
+                    0 0 16px 4px rgba(255, 210, 0, 0.95),
+                    inset 0 1px 1px rgba(255,255,255,0.85),
+                    inset 0 -2px 3px rgba(120, 80, 0, 0.5),
+                    0 3px 8px rgba(120, 80, 0, 0.5);
+                transform: scale(1.09);
+            }
+        }
+        @keyframes verified-shine {
+            0%   { transform: translateX(-130%) skewX(-22deg); opacity: 0; }
+            30%  { opacity: 0.95; }
+            100% { transform: translateX(240%)  skewX(-22deg); opacity: 0; }
+        }
+        @keyframes verified-text-glow {
+            0%, 100% {
+                box-shadow:
+                    inset 0 0 0 1px rgba(255,255,255,0.6),
+                    0 0 5px rgba(255, 200, 0, 0.55),
+                    0 1px 3px rgba(120, 80, 0, 0.3);
+            }
+            50% {
+                box-shadow:
+                    inset 0 0 0 1px rgba(255,255,255,0.85),
+                    0 0 12px 2px rgba(255, 205, 0, 0.9),
+                    0 1px 4px rgba(120, 80, 0, 0.4);
+            }
+        }
         .verified-badge {
+            position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             width: 22px;
             height: 22px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #ffd700 0%, #f5a623 100%);
-            color: #5a3d00;
+            background:
+                radial-gradient(circle at 30% 24%,
+                    #fffce8 0%,
+                    #ffe97a 16%,
+                    #ffd700 36%,
+                    #f5a623 64%,
+                    #b8860b 100%);
+            color: #fff;
             font-size: 0.75rem;
             font-weight: 900;
-            box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,0.25);
+            border: 1.5px solid #fff6c2;
             cursor: help;
             vertical-align: middle;
             margin-right: 0.3rem;
+            overflow: hidden;
+            text-shadow: 0 1px 1px rgba(90, 60, 0, 0.75), 0 0 2px rgba(255, 235, 130, 0.9);
+            will-change: transform, box-shadow;
+            animation: verified-pulse 1.8s ease-in-out infinite;
+        }
+        .verified-badge::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 38%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.92), transparent);
+            animation: verified-shine 2.6s ease-in-out infinite;
+            animation-delay: 0.4s;
+            pointer-events: none;
         }
         .verified-badge.lg { width: 30px; height: 30px; font-size: 1rem; }
         .verified-badge.sm { width: 16px; height: 16px; font-size: 0.55rem; }
+        .verified-badge.sm::after { width: 46%; }
         .verified-text {
             display: inline-flex;
             align-items: center;
             gap: 0.3rem;
-            background: linear-gradient(135deg, #fff7d6 0%, #ffe9a8 100%);
-            color: #7a5200;
-            border: 1px solid #f5c542;
+            background:
+                radial-gradient(circle at 18% 0%,
+                    #fffbe6 0%,
+                    #fff0b8 26%,
+                    #ffe28a 56%,
+                    #f5c542 100%);
+            color: #5a3d00;
+            border: 1.5px solid #f5a623;
             border-radius: 999px;
-            padding: 0.15rem 0.6rem;
+            padding: 0.18rem 0.7rem;
             font-size: 0.75rem;
-            font-weight: 700;
+            font-weight: 800;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.55);
+            will-change: box-shadow;
+            animation: verified-text-glow 2.2s ease-in-out infinite;
         }
+        .verified-text > i { color: #b8860b; }
         body.dark-mode .verified-badge {
-            box-shadow: 0 0 0 2px #1f2430, 0 1px 4px rgba(0,0,0,0.5);
+            border-color: #ffe28a;
+            animation-name: verified-pulse-dark;
+        }
+        @keyframes verified-pulse-dark {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 2px #1f2430,
+                    0 0 0 0 rgba(255, 215, 0, 0.85),
+                    inset 0 1px 1px rgba(255,255,255,0.55),
+                    inset 0 -2px 3px rgba(60, 40, 0, 0.6),
+                    0 0 8px rgba(255, 215, 0, 0.6);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow:
+                    0 0 0 2px #1f2430,
+                    0 0 0 7px rgba(255, 215, 0, 0),
+                    0 0 20px 5px rgba(255, 215, 0, 0.95),
+                    inset 0 1px 1px rgba(255,255,255,0.65),
+                    inset 0 -2px 3px rgba(60, 40, 0, 0.7),
+                    0 0 14px rgba(255, 215, 0, 0.8);
+                transform: scale(1.09);
+            }
         }
         body.dark-mode .verified-text {
-            background: linear-gradient(135deg, #3d2e00 0%, #5a4200 100%);
+            background: linear-gradient(135deg, #3d2e00 0%, #5a4200 55%, #7a5a00 100%);
             color: #ffd700;
-            border-color: #7a5200;
+            border-color: #ffd700;
+        }
+        body.dark-mode .verified-text > i { color: #ffd700; }
+        @media (prefers-reduced-motion: reduce) {
+            .verified-badge,
+            .verified-badge::after,
+            .verified-text { animation: none !important; }
+            .verified-badge { transform: none !important; }
         }
         .id-verify-status-pending { background: #fff3cd; border-color: #ffe08a; color: #7a5200; }
         .id-verify-status-approved { background: #d4edda; border-color: #a3d9b1; color: #155724; }
@@ -933,6 +1039,76 @@
         .chat-bubble-time { font-size: 0.68rem; opacity: 0.65; margin-top: 0.2rem; text-align: right; }
         .chat-input-footer { gap: 0.5rem; }
         .chat-input-footer input { flex: 1; }
+        /* ===== فقاعة الدردشة العائمة (مثل مسنجر فيسبوك) ===== */
+        @keyframes chatFabIn { from { transform: scale(0) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+        @keyframes chatFabBounce { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-10px); } 55% { transform: translateY(-3px); } 75% { transform: translateY(-6px); } }
+        @keyframes chatFabPulseRing {
+            0%   { box-shadow: 0 0 0 0 rgba(200,16,46,0.55), 0 4px 14px rgba(0,0,0,0.3), 0 0 0 3px #fff; }
+            70%  { box-shadow: 0 0 0 14px rgba(200,16,46,0), 0 4px 14px rgba(0,0,0,0.3), 0 0 0 3px #fff; }
+            100% { box-shadow: 0 0 0 0 rgba(200,16,46,0), 0 4px 14px rgba(0,0,0,0.3), 0 0 0 3px #fff; }
+        }
+        .chat-fab {
+            position: fixed;
+            z-index: 1045;
+            bottom: 84px;       /* فوق الشريط السفلي على الهاتف */
+            left: 16px;          /* جهة البداية في RTL */
+            width: 58px; height: 58px;
+            cursor: pointer;
+            animation: chatFabIn 0.35s cubic-bezier(.18,.89,.32,1.28);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .chat-fab.is-bouncing .chat-fab-avatar { animation: chatFabBounce 0.7s ease; }
+        .chat-fab.has-unread .chat-fab-avatar { animation: chatFabPulseRing 1.8s ease-out infinite; }
+        @media (min-width: 768px) {
+            .chat-fab { bottom: 24px; left: 24px; width: 62px; height: 62px; }
+        }
+        .chat-fab-avatar {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #c8102e 0%, #8b0021 100%);
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.3), 0 0 0 3px #fff;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+        .chat-fab-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .chat-fab:hover .chat-fab-avatar { transform: scale(1.07); }
+        .chat-fab-badge {
+            position: absolute; top: -5px; right: -5px;
+            background: #dc2626; color: #fff;
+            border-radius: 999px; min-width: 22px; height: 22px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.72rem; font-weight: 800;
+            border: 2px solid #fff; padding: 0 5px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .chat-fab-close {
+            position: absolute; top: -7px; left: -7px;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: #1f2937; color: #fff; border: 2px solid #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.95rem; line-height: 1; padding: 0;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .chat-fab-label {
+            position: absolute; top: 50%; right: 100%; transform: translateY(-50%);
+            margin-right: 8px; white-space: nowrap;
+            background: rgba(17,24,39,0.92); color: #fff;
+            padding: 4px 10px; border-radius: 8px;
+            font-size: 0.75rem; font-weight: 600;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .chat-fab:hover .chat-fab-label { opacity: 1; }
+        body.dark-mode .chat-fab-avatar { box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 0 0 3px #1f2430; }
+        body.dark-mode .chat-fab-badge { border-color: #1f2430; }
+        body.dark-mode .chat-fab-close { border-color: #1f2430; }
+        body.dark-mode .chat-fab-label { background: rgba(0,0,0,0.85); }
+        @media (prefers-reduced-motion: reduce) {
+            .chat-fab, .chat-fab-avatar, .chat-fab.has-unread .chat-fab-avatar, .chat-fab.is-bouncing .chat-fab-avatar { animation: none !important; }
+        }
         /* ===== Voice message recording button + bubble ===== */
         .voice-record-btn {
             flex-shrink: 0;
@@ -1528,9 +1704,9 @@ body.dark-mode .chat-contact-accepted-bubble {
                                                 <input type="email" id="reg-email" class="form-control" required placeholder="example@email.com" oninput="onRegEmailChanged()">
                                                 <button type="button" id="reg-send-code-btn" class="btn btn-outline-danger" onclick="sendRegistrationVerificationCode()">إرسال كود التحقق</button>
                                             </div>
-                                            <div id="reg-email-verify-row" class="input-group mt-2 d-none">
-                                                <input type="text" id="reg-email-code-input" class="form-control" placeholder="أدخل كود التحقق المرسل إلى بريدك" maxlength="6" inputmode="numeric">
-                                                <button type="button" class="btn btn-brand" onclick="verifyRegistrationCode()">تحقق</button>
+                                            <div id="reg-email-verify-row" class="mt-2 d-none">
+                                                <input type="text" id="reg-email-code-input" class="form-control text-center fw-bold" placeholder="------" maxlength="6" inputmode="numeric" oninput="onEmailCodeAutoVerify(this,'verifyRegistrationCode')" style="letter-spacing:0.6em; font-size:1.15rem;" autocomplete="one-time-code">
+                                                <small class="form-text text-muted d-block mt-1"><i class="fa-solid fa-wand-magic-sparkles"></i> يتم التحقق تلقائياً بمجرد إدخال 6 أرقام.</small>
                                             </div>
                                             <small id="reg-email-verify-status" class="form-text"></small>
                                         </div>
@@ -1701,9 +1877,9 @@ body.dark-mode .chat-contact-accepted-bubble {
                                                 <input type="email" id="admin-profile-email" class="form-control" required oninput="onAdminProfileEmailChanged()">
                                                 <button type="button" id="admin-profile-send-code-btn" class="btn btn-outline-danger" onclick="sendAdminProfileEmailVerificationCode()">إرسال كود التحقق</button>
                                             </div>
-                                            <div id="admin-profile-email-verify-row" class="input-group mt-2 d-none">
-                                                <input type="text" id="admin-profile-email-code-input" class="form-control" placeholder="أدخل كود التحقق المرسل إلى بريدك" maxlength="6" inputmode="numeric">
-                                                <button type="button" class="btn btn-brand" onclick="verifyAdminProfileEmailCode()">تحقق</button>
+                                            <div id="admin-profile-email-verify-row" class="mt-2 d-none">
+                                                <input type="text" id="admin-profile-email-code-input" class="form-control text-center fw-bold" placeholder="------" maxlength="6" inputmode="numeric" oninput="onEmailCodeAutoVerify(this,'verifyAdminProfileEmailCode')" style="letter-spacing:0.6em; font-size:1.15rem;" autocomplete="one-time-code">
+                                                <small class="form-text text-muted d-block mt-1"><i class="fa-solid fa-wand-magic-sparkles"></i> يتم التحقق تلقائياً بمجرد إدخال 6 أرقام.</small>
                                             </div>
                                             <small id="admin-profile-email-verify-status" class="form-text"></small>
                                         </div>
@@ -1733,9 +1909,9 @@ body.dark-mode .chat-contact-accepted-bubble {
                                                 <input type="email" id="profile-email" class="form-control" required oninput="onProfileEmailChanged()">
                                                 <button type="button" id="profile-send-code-btn" class="btn btn-outline-danger" onclick="sendProfileEmailVerificationCode()">إرسال كود التحقق</button>
                                             </div>
-                                            <div id="profile-email-verify-row" class="input-group mt-2 d-none">
-                                                <input type="text" id="profile-email-code-input" class="form-control" placeholder="أدخل كود التحقق المرسل إلى بريدك" maxlength="6" inputmode="numeric">
-                                                <button type="button" class="btn btn-brand" onclick="verifyProfileEmailCode()">تحقق</button>
+                                            <div id="profile-email-verify-row" class="mt-2 d-none">
+                                                <input type="text" id="profile-email-code-input" class="form-control text-center fw-bold" placeholder="------" maxlength="6" inputmode="numeric" oninput="onEmailCodeAutoVerify(this,'verifyProfileEmailCode')" style="letter-spacing:0.6em; font-size:1.15rem;" autocomplete="one-time-code">
+                                                <small class="form-text text-muted d-block mt-1"><i class="fa-solid fa-wand-magic-sparkles"></i> يتم التحقق تلقائياً بمجرد إدخال 6 أرقام.</small>
                                             </div>
                                             <small id="profile-email-verify-status" class="form-text"></small>
                                             <small class="form-text text-muted d-block">يُستعمل لاستعادة كلمة المرور عند نسيانها.</small>
@@ -1844,6 +2020,12 @@ body.dark-mode .chat-contact-accepted-bubble {
                         <button type="button" class="admin-pill-btn danger" data-pill="tab-reports" id="pill-reports" onclick="switchAdminPill('tab-reports')">
                             <i class="fa-solid fa-flag"></i> الإبلاغات <span class="pill-count" id="pill-count-reports-admin">0</span>
                         </button>
+                        <button type="button" class="admin-pill-btn warning" data-pill="tab-id-verifications" id="pill-id-verifications" onclick="switchAdminPill('tab-id-verifications')">
+                            <i class="fa-solid fa-id-card-clip"></i> طلبات التوثيق <span class="pill-count" id="pill-count-id-verifications">0</span>
+                        </button>
+                        <button type="button" class="admin-pill-btn" data-pill="tab-settings" id="pill-settings" onclick="switchAdminPill('tab-settings')">
+                            <i class="fa-solid fa-gear"></i> الإعدادات
+                        </button>
                         <!-- زر "المحادثات" تمت إزالته من الشريط العلوي لأنه موجود مسبقاً في الشريط الجانبي
                              وفي الشريط السفلي على الهاتف، فكان مكرراً (رسم أحمر في لقطة الشاشة). -->
                     </div>
@@ -1951,7 +2133,41 @@ body.dark-mode .chat-contact-accepted-bubble {
                                 </div>
                             </div>
                         </div>
-                        <!-- قسم 9: المحادثات -->
+                        <!-- قسم 9: طلبات توثيق الهوية (تبويب مخصص لئلا تُفقد الطلبات عند مسح إشعار الجرس) -->
+                        <div class="admin-section" id="tab-id-verifications" style="display:none;">
+                            <div class="dashboard-card">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h5 class="mb-0 font-weight-bold text-warning"><i class="fa-solid fa-id-card-clip"></i> طلبات توثيق الهوية (في انتظار المراجعة)</h5>
+                                    <span class="badge bg-warning text-dark fs-6">معلّقة: <span id="idv-pending-count">0</span></span>
+                                </div>
+                                <p class="text-muted small">قائمة دائمة بكل الأعضاء الذين رفعوا صور هوياتهم ولم يُبتّ في طلبهم بعد. تبقى الطلبات هنا ظاهرة حتى تعتمدها أو ترفضها — حتى لو مُسح إشعار الجرس بالخطأ.</p>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>الرقم المرجعي</th>
+                                                <th>الاسم</th>
+                                                <th>الجنس</th>
+                                                <th>تاريخ الرفع</th>
+                                                <th class="text-center">معاينة الهوية</th>
+                                                <th class="text-center">إجراء</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="id-verifications-pending-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="dashboard-card mt-3">
+                                <h6 class="mb-2 text-muted"><i class="fa-solid fa-clock-rotate-left"></i> آخر القرارات المتخذة (آخر 30 يوماً)</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle">
+                                        <thead class="table-light"><tr><th>الرقم المرجعي</th><th>الاسم</th><th>القرار</th><th>التاريخ</th><th>ملاحظة</th></tr></thead>
+                                        <tbody id="id-verifications-recent-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- قسم 10: المحادثات -->
                         <div class="admin-section" id="tab-chats" style="display:none;">
                             <div class="dashboard-card mb-4">
                                 <h5 class="mb-3 font-weight-bold text-success"><i class="fa-solid fa-headset"></i> محادثات الدعم مع الأعضاء</h5>
@@ -1986,6 +2202,39 @@ body.dark-mode .chat-contact-accepted-bubble {
                                         </thead>
                                         <tbody id="admin-direct-chats-table"></tbody>
                                     </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- قسم الإعدادات: إحصائيات الموقع (Umami) -->
+                        <div class="admin-section" id="tab-settings" style="display:none;">
+                            <div class="dashboard-card">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h5 class="mb-0 font-weight-bold text-success"><i class="fa-solid fa-gear"></i> إعدادات المنصة</h5>
+                                </div>
+                                <!-- إحصائيات الموقع (Umami) -->
+                                <div class="border rounded p-4 mb-3">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                        <h6 class="mb-0 fw-bold"><i class="fa-solid fa-chart-line text-success"></i> إحصائيات الموقع (Umami)</h6>
+                                        <span id="umami-status-badge" class="badge bg-secondary fs-6"><i class="fa-solid fa-circle-pause"></i> غير مُفعّل</span>
+                                    </div>
+                                    <p class="text-muted small mb-3">إحصائيات مجانية تحترم خصوصية الزوّار (بدون كوكيز، بدون إعلانات). أدخل <strong>معرّف الموقع (Website ID)</strong> من لوحة Umami ليبدأ جمع الزيارات تلقائياً.</p>
+                                    <label class="form-label fw-semibold">معرّف الموقع (Website ID)</label>
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text"><i class="fa-solid fa-fingerprint"></i></span>
+                                        <input type="text" id="umami-website-id-input" class="form-control" placeholder="مثال: a1b2c3d4-e5f6-7890-abcd-ef1234567890" autocomplete="off">
+                                        <button class="btn btn-brand" id="umami-save-btn" onclick="saveAnalyticsSettings()"><i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات</button>
+                                    </div>
+                                    <div id="umami-save-feedback"></div>
+                                    <div class="alert alert-light border mt-3 mb-0 small">
+                                        <p class="fw-bold mb-2"><i class="fa-solid fa-circle-info text-info"></i> كيف تحصل على المعرّف؟ (٤ خطوات)</p>
+                                        <ol class="mb-2">
+                                            <li>أنشئ حساباً مجانياً على <a href="https://cloud.umami.is" target="_blank" rel="noopener">cloud.umami.is <i class="fa-solid fa-up-right-from-square fa-xs"></i></a></li>
+                                            <li>من اللوحة اضغط <strong>Add Website</strong> وأدخل اسم موقعك ورابطه.</li>
+                                            <li>انسخ قيمة <strong>Website ID</strong> (سلسلة بصيغة UUID).</li>
+                                            <li>الصقها في الحقل أعلاه واضغط <strong>حفظ الإعدادات</strong>.</li>
+                                        </ol>
+                                        <p class="mb-0 text-muted">ستظهر الزيارات فوراً في لوحة Umami (قد يستغرق ظهور أول زيارة بضع دقائق). لإيقاف الجمع: امسح المعرّف واحفظ.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2189,6 +2438,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                     firebase.initializeApp(firebaseConfig);
                     db = firebase.firestore();
                     _firebaseReady = true;
+                    if (typeof window.loadAnalyticsSettings === 'function') window.loadAnalyticsSettings();
                 } catch (e) { console.error('Firebase init error:', e); }
             } else {
                 console.warn('Firebase SDK not loaded yet (possibly blocked by Edge Tracking Prevention). Will retry...');
@@ -2209,6 +2459,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                         clearInterval(timer);
                         console.log('Firebase initialized on retry #' + attempts);
                         if (typeof checkFirestoreReadyAndRender === 'function') checkFirestoreReadyAndRender();
+                        if (typeof window.loadAnalyticsSettings === 'function') window.loadAnalyticsSettings();
                     } catch (e) { /* ignore duplicate init */ }
                 }
                 if (attempts >= 10) { clearInterval(timer); }
@@ -3188,6 +3439,20 @@ body.dark-mode .chat-contact-accepted-bubble {
             }, 1000);
         }
 
+        // ==================== التحقق التلقائي من كود البريد عند إكمال 6 أرقام ====================
+        // يُستدعى من oninput في حقول كود التحقق الثلاثة (التسجيل، بروفيل الإدارة، بروفيل العضو).
+        // يقيد الإدخال على الأرقام فقط، وما إن يبلغ طوله 6 أرقاماً يستدعي دالة التحقق المناسبة
+        // تلقائياً — فلا حاجة لزر "تحقق" بعد الآن. يدعم أيضاً لصق كود مكون من 6 أرقام دفعة واحدة.
+        window.onEmailCodeAutoVerify = function(input, verifyFnName) {
+            // قصر الإدخال على الأرقام فقط (يتجاهل المسافات والشرطات والحورف)
+            const cleaned = (input.value || '').replace(/\D/g, '').slice(0, 6);
+            if (cleaned !== input.value) input.value = cleaned;
+            if (cleaned.length === 6 && typeof window[verifyFnName] === 'function') {
+                // استدعاء التحقق في الميكروتاسك التالي ليُحدّث واجهة الحقل أولاً
+                setTimeout(function() { try { window[verifyFnName](); } catch (e) { console.error(e); } }, 0);
+            }
+        };
+
         window.verifyRegistrationCode = function() {
             const status = document.getElementById('reg-email-verify-status');
             const enteredCode = document.getElementById('reg-email-code-input').value.trim();
@@ -4062,6 +4327,108 @@ body.dark-mode .chat-contact-accepted-bubble {
             }
         }
 
+        // ===== فقاعة الدردشة العائمة (مثل مسنجر فيسبوك) — للأعضاء فقط =====
+        // تعرض آخر محادثة مباشرة كرأس دائري عائم + شارة للرسائل غير المقروءة.
+        // النقر يفتح المحادثة في النافذة المنبثقة. تُخفى للإدارة (لديهم لوحة خاصة).
+        let _chatFabLastUnread = -1;
+        let _chatFabDismissed = false;
+
+        function renderChatFab() {
+            const fab = document.getElementById('chatFab');
+            if (!fab) return;
+            // مخفية دائماً لغير المسجّلين وللإدارة (للإدارة لوحة محادثات خاصة)
+            if (!currentUser || currentUser.isAdmin) { fab.classList.add('d-none'); _chatFabLastUnread = -1; return; }
+
+            const myDirectChats = getDirectChats().filter(c => c.userAId === currentUser.id || c.userBId === currentUser.id);
+            const supportChat = findAdminChatForMember(currentUser.id);
+            const hasSupport = !!(supportChat && supportChat.messages && supportChat.messages.length > 0);
+            const supportUnread = supportChat ? supportChat.messages.filter(m => m.senderRole === 'admin' && !m.seenByMember).length : 0;
+
+            // عدّ المحادثات المباشرة غير المقروءة (آخر رسالة من الطرف الآخر) + تحديد أحدث محادثة
+            let directUnread = 0;
+            let latestChat = null;
+            let latestTs = '';
+            const users = getUsers();
+            myDirectChats.forEach(c => {
+                const msgs = c.messages || [];
+                const last = msgs[msgs.length - 1];
+                if (last && last.senderId !== currentUser.id) directUnread++;
+                if (last && (last.timestamp || '') > latestTs) { latestChat = c; latestTs = last.timestamp || ''; }
+            });
+            const totalUnread = directUnread + supportUnread;
+
+            // إعادة الإظهار تلقائياً عند وصول رسالة جديدة بعد الإخفاء اليدوي
+            if (totalUnread > 0 && _chatFabDismissed) _chatFabDismissed = false;
+
+            const show = (myDirectChats.length > 0 || hasSupport) && !_chatFabDismissed;
+            if (!show) { fab.classList.add('d-none'); return; }
+            fab.classList.remove('d-none');
+
+            const avatar = document.getElementById('chatFabAvatar');
+            const badge = document.getElementById('chatFabBadge');
+            const label = document.getElementById('chatFabLabel');
+            const closeBtn = document.getElementById('chatFabClose');
+
+            // الصورة الرمزية: آخر محادثة مباشرة (صورة الطرف الآخر)، وإلا أيقونة الدعم
+            if (latestChat) {
+                const otherId = latestChat.userAId === currentUser.id ? latestChat.userBId : latestChat.userAId;
+                const otherUser = users.find(u => u.id === otherId);
+                if (otherUser && otherUser.profilePicture) {
+                    avatar.innerHTML = `<img src="${escapeHtml(otherUser.profilePicture)}" alt="">`;
+                } else {
+                    avatar.innerHTML = `<i class="fa-solid fa-user"></i>`;
+                }
+                if (label) label.textContent = 'دردشة مع ' + (otherUser ? otherUser.profileNumber : '');
+                avatar.dataset.target = 'direct:' + otherId + ':' + (latestChat.requestId || 'null');
+            } else {
+                avatar.innerHTML = `<i class="fa-solid fa-headset"></i>`;
+                if (label) label.textContent = 'الدعم';
+                avatar.dataset.target = 'support';
+            }
+
+            // شارة غير المقروء
+            if (totalUnread > 0) {
+                badge.textContent = totalUnread > 9 ? '9+' : String(totalUnread);
+                badge.classList.remove('d-none');
+                fab.classList.add('has-unread');
+            } else {
+                badge.classList.add('d-none');
+                fab.classList.remove('has-unread');
+            }
+
+            // نبض ارتدادي عند زيادة عدد غير المقروء (رسالة جديدة)
+            if (_chatFabLastUnread >= 0 && totalUnread > _chatFabLastUnread) {
+                fab.classList.remove('is-bouncing');
+                void fab.offsetWidth; // إعادة تشغيل الأنيميشن
+                fab.classList.add('is-bouncing');
+                setTimeout(() => fab.classList.remove('is-bouncing'), 800);
+            }
+            _chatFabLastUnread = totalUnread;
+
+            if (closeBtn) closeBtn.classList.remove('d-none');
+        }
+
+        window.onChatFabClick = function(e) {
+            const avatar = document.getElementById('chatFabAvatar');
+            if (!avatar) return;
+            const target = avatar.dataset.target || '';
+            if (target === 'support') {
+                if (typeof openSupportChat === 'function') openSupportChat();
+            } else if (target.indexOf('direct:') === 0) {
+                const parts = target.split(':');
+                const otherId = parseInt(parts[1], 10);
+                const reqId = parts[2] === 'null' ? null : parseInt(parts[2], 10);
+                if (!isNaN(otherId) && typeof openDirectChat === 'function') openDirectChat(otherId, reqId);
+            }
+        };
+
+        window.dismissChatFab = function() {
+            const fab = document.getElementById('chatFab');
+            if (fab) fab.classList.add('d-none');
+            _chatFabDismissed = true;
+            // يُعاد الإظهار تلقائياً عند وصول رسالة جديدة (renderChatFab يلغي العلم عند totalUnread>0)
+        };
+
         function renderChatHeaderBadge() {
             const badge = document.getElementById('sidebar-support-chat-badge');
             if (!badge || !currentUser) return;
@@ -4798,6 +5165,10 @@ body.dark-mode .chat-contact-accepted-bubble {
             if (pillId === 'tab-stats') loadStatistics();
             // تحديث المحادثات
             if (pillId === 'tab-chats') renderChatUI();
+            // تحديث تبويب طلبات التوثيق
+            if (pillId === 'tab-id-verifications') renderIdVerificationRequests();
+            // تحديث تبويب الإعدادات
+            if (pillId === 'tab-settings') renderSettingsTab();
             // تحديث لوحة التحكم الكاملة عند فتح أي قسم
             renderAdminDashboard();
         };
@@ -4841,6 +5212,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                         <a onclick="switchView('view-browse')" class="sidebar-link ${activeViewId === 'view-browse' ? 'active' : ''}"><i class="fa-solid fa-users"></i><span> تصفح الأعضاء</span></a>
                         <div class="sidebar-divider"></div>
                         ${perms.manageMembers ? `<a onclick="openAdminTab('tab-members')" class="sidebar-link ${isAdminTabActive('tab-members') ? 'active' : ''}"><i class="fa-solid fa-users-gear"></i><span> إدارة شجرة الأعضاء</span></a>` : ''}
+                        ${perms.manageMembers ? `<a onclick="openAdminTab('tab-id-verifications')" class="sidebar-link ${isAdminTabActive('tab-id-verifications') ? 'active' : ''}"><i class="fa-solid fa-id-card-clip"></i><span> طلبات التوثيق</span> <span id="sidebar-idv-count" class="badge rounded-pill bg-warning text-dark d-none">0</span></a>` : ''}
                         ${perms.viewStats ? `<a onclick="openAdminTab('tab-stats')" class="sidebar-link ${isAdminTabActive('tab-stats') ? 'active' : ''}"><i class="fa-solid fa-chart-pie"></i><span> لوحة الإحصائيات</span></a>` : ''}
                         ${(currentUser.username === 'admin' || isSuperAdmin()) ? `<a onclick="openAdminTab('tab-add-admin')" class="sidebar-link ${isAdminTabActive('tab-add-admin') ? 'active' : ''}"><i class="fa-solid fa-user-shield"></i><span> إضافة مشرف</span></a>` : ''}
                         ${isSuperAdmin() ? `<a onclick="openAdminTab('tab-manage-admins')" class="sidebar-link ${isAdminTabActive('tab-manage-admins') ? 'active' : ''}"><i class="fa-solid fa-user-tie"></i><span> إدارة المسؤولين</span></a>` : ''}
@@ -4900,6 +5272,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             renderAdminDashboard();
             renderNotifications();
             renderChatUI();
+            renderChatFab();
             renderBottomNav();
         }
         function renderBottomNav() {
@@ -6161,7 +6534,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                         title: '🪪 طلب توثيق هوية',
                         text: `${escapeHtml(u.fullName)} (${escapeHtml(u.profileNumber)}) رفع صورة هوية بانتظار المراجعة`,
                         nav: () => { switchView('view-admin');
-                            activateAdminTab('tab-members');
+                            switchAdminPill('tab-id-verifications');
                             setTimeout(() => reviewIdVerification(u.id), 400); }
                     });
                 });
@@ -7032,6 +7405,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             if (pillBtn('pill-pending-requests')) pillBtn('pill-pending-requests').style.display = perms.manageMembers ? '' : 'none';
             if (pillBtn('pill-password-requests')) pillBtn('pill-password-requests').style.display = isMainAdmin ? '' : 'none';
             if (pillBtn('pill-reports')) pillBtn('pill-reports').style.display = isMainAdmin ? '' : 'none';
+            if (pillBtn('pill-id-verifications')) pillBtn('pill-id-verifications').style.display = perms.manageMembers ? '' : 'none';
 
             if (isMainAdmin) renderPasswordRequestsTab();
             if (isSuperAdmin()) renderManageAdminsTable();
@@ -7052,11 +7426,23 @@ body.dark-mode .chat-contact-accepted-bubble {
             elC('pill-count-membership-pending', pendingMembers.length);
             elC('pill-count-password-pending', getPasswordRequests().filter(r => r.status !== 'handled').length);
             elC('pill-count-reports-admin', getReports().length);
+            elC('pill-count-id-verifications', members.filter(m => m.idVerificationStatus === 'pending' && m.idImageUrl).length);
+            // شارة عدّاد طلبات التوثيق في الشريط الجانبي
+            const _idvPending = members.filter(m => m.idVerificationStatus === 'pending' && m.idImageUrl).length;
+            const _sidebarIdvBadge = document.getElementById('sidebar-idv-count');
+            if (_sidebarIdvBadge) {
+                if (_idvPending > 0) { _sidebarIdvBadge.textContent = _idvPending > 9 ? '9+' : String(_idvPending); _sidebarIdvBadge.classList.remove('d-none'); }
+                else { _sidebarIdvBadge.classList.add('d-none'); }
+            }
 
             // تحديث جداول الأعضاء (الأقراص الفرعية)
             renderMembersPillTables();
 
             renderPendingRequests();
+            // تحديث تبويب طلبات التوثيق (قائمة دائمة)
+            renderIdVerificationRequests();
+            // إظهار تبويب الإعدادات للمسؤول الرئيسي فقط
+            if (pillBtn('pill-settings')) pillBtn('pill-settings').style.display = isSuperAdmin() ? '' : 'none';
         }
 
         // ==================== جداول الأعضاء (3 أقسام فرعية) ====================
@@ -7234,10 +7620,168 @@ body.dark-mode .chat-contact-accepted-bubble {
             }
         };
 
-        // تفعيل/تعطيل زر القبول بناءً على حالة الـ checkbox
+        // تفعيل/تعطيل زر القبول بناءً على حالة الـ checkbox مع إلزام فتح رابط التواصل أولاً
         window._togglePendingApprove = function(userId, checked) {
+            const cb = document.getElementById('pending-verify-' + userId);
             const btn = document.getElementById('pending-approve-' + userId);
+            // إذا كان الـ checkbox مقفولاً (لم يُفتح رابط التواصل بعد)، امنع التحديد وأظهر تنبيهاً
+            if (checked && cb && cb.hasAttribute('data-locked')) {
+                cb.checked = false;
+                if (btn) btn.disabled = true;
+                showAlert('يرجى فتح رابط التواصل أولاً لتفعيل خيار "تحققت من الرابط".', 'warning');
+                return;
+            }
             if (btn) btn.disabled = !checked;
+        };
+
+        // ==================== تبويب الإعدادات: إحصائيات الموقع (Umami) ====================
+        // يقرأ/يكتب معرّف موقع Umami من Firestore (settings/analytics) ويُحقن سكربت التتبع ديناميكياً.
+        // هذا يحلّ مشكلة "لم أجد الإحصائيات": لا حاجة لتعديل كود HTML — يُهيّأ من لوحة التحكم مباشرةً.
+        let _umamiInjected = false;
+        window.loadAnalyticsSettings = function() {
+            if (!db || _umamiInjected) return;
+            try {
+                db.collection('settings').doc('analytics').get().then(function(doc) {
+                    if (!doc.exists) return;
+                    var wid = ((doc.data() || {}).umamiWebsiteId || '').trim();
+                    if (wid && wid !== 'PUT_WEBSITE_ID_HERE' && wid.length >= 20) {
+                        var s = document.createElement('script');
+                        s.defer = true;
+                        s.src = 'https://cloud.umami.is/script.js';
+                        s.setAttribute('data-website-id', wid);
+                        s.setAttribute('data-cache', 'true');
+                        document.head.appendChild(s);
+                        _umamiInjected = true;
+                        console.log('[Umami] Tracking script injected (Website ID: ' + wid.substring(0, 8) + '…).');
+                    }
+                }).catch(function() { /* analytics is non-critical — silent */ });
+            } catch (e) { /* silent */ }
+        };
+
+        window.renderSettingsTab = function() {
+            if (!isSuperAdmin()) return;
+            var statusEl = document.getElementById('umami-status-badge');
+            var inputEl = document.getElementById('umami-website-id-input');
+            if (!db || !inputEl) return;
+            db.collection('settings').doc('analytics').get().then(function(doc) {
+                var wid = '';
+                if (doc.exists) wid = ((doc.data() || {}).umamiWebsiteId || '').trim();
+                inputEl.value = wid;
+                if (statusEl) {
+                    if (wid && wid !== 'PUT_WEBSITE_ID_HERE') {
+                        statusEl.className = 'badge bg-success fs-6';
+                        statusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> مُفعّل — يجمع الزيارات الآن';
+                    } else {
+                        statusEl.className = 'badge bg-secondary fs-6';
+                        statusEl.innerHTML = '<i class="fa-solid fa-circle-pause"></i> غير مُفعّل — أدخل المعرّف لبدء الجمع';
+                    }
+                }
+            }).catch(function() {
+                if (statusEl) { statusEl.className = 'badge bg-warning text-dark fs-6'; statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> تعذّر قراءة الإعدادات'; }
+            });
+        };
+
+        window.saveAnalyticsSettings = function() {
+            if (!isSuperAdmin()) { showAlert('هذا الإجراء مخصص للمسؤول الرئيسي فقط.', 'danger'); return; }
+            var inputEl = document.getElementById('umami-website-id-input');
+            if (!inputEl) return;
+            var wid = (inputEl.value || '').trim();
+            var feedbackEl = document.getElementById('umami-save-feedback');
+            // التحقق من الصيغة: UUID قياسي (نقبل الفراغ لإلغاء التفعيل)
+            if (wid && wid !== 'PUT_WEBSITE_ID_HERE' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(wid)) {
+                if (feedbackEl) { feedbackEl.className = 'text-danger small mt-2'; feedbackEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> صيغة المعرّف غير صحيحة. يجب أن يكون بصيغة UUID (مثال: a1b2c3d4-e5f6-7890-abcd-ef1234567890).'; }
+                return;
+            }
+            if (!db) { if (feedbackEl) { feedbackEl.className = 'text-danger small mt-2'; feedbackEl.textContent = 'قاعدة البيانات غير جاهزة.'; } return; }
+            var btn = document.getElementById('umami-save-btn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جارٍ الحفظ…'; }
+            db.collection('settings').doc('analytics').set({
+                umamiWebsiteId: wid,
+                updatedAt: new Date().toISOString(),
+                updatedBy: currentUser ? currentUser.username : 'unknown'
+            }).then(function() {
+                if (feedbackEl) {
+                    feedbackEl.className = 'text-success small mt-2';
+                    feedbackEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (wid ? 'تم حفظ المعرّف. ستُجمَع الزيارات من الآن (قد يظهر أول ظهور في لوحة Umami خلال دقائق).' : 'تم إلغاء التفعيل ومسح المعرّف.');
+                }
+                // حقن السكربت فوراً إذا حُفظ معرّف صحيح ولم يُحقن بعد
+                if (wid && wid !== 'PUT_WEBSITE_ID_HERE' && !_umamiInjected) {
+                    var s = document.createElement('script');
+                    s.defer = true; s.src = 'https://cloud.umami.is/script.js';
+                    s.setAttribute('data-website-id', wid); s.setAttribute('data-cache', 'true');
+                    document.head.appendChild(s); _umamiInjected = true;
+                }
+                window.renderSettingsTab();
+            }).catch(function(e) {
+                if (feedbackEl) { feedbackEl.className = 'text-danger small mt-2'; feedbackEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> فشل الحفظ: ' + (e.message || e); }
+            }).finally(function() {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات'; }
+            });
+        };
+
+        // ==================== تبويب طلبات التوثيق (قائمة دائمة لا تُفقد عند مسح إشعار الجرس) ====================
+        // يعرض كل طلبات توثيق الهوية المعلّقة + آخر القرارات المتخذة (لمدة 30 يوماً).
+        // مصدر البيانات: حقل users[].idVerificationStatus و idImageUrl و idVerificationSubmittedAt
+        // و idVerificationDecidedAt و idVerificationRejectReason.
+        window.renderIdVerificationRequests = function() {
+            if (!currentUser || !currentUser.isAdmin) return;
+            const pendingTable = document.getElementById('id-verifications-pending-table');
+            const recentTable  = document.getElementById('id-verifications-recent-table');
+            const pendingCountEl = document.getElementById('idv-pending-count');
+            if (!pendingTable && !recentTable) return; // ليس في لوحة الإدارة
+            const users = getUsers();
+            const members = users.filter(u => !u.isAdmin);
+
+            // (أ) الطلبات المعلّقة: لها صورة والحالة 'pending'
+            const pending = members
+                .filter(m => m.idVerificationStatus === 'pending' && m.idImageUrl)
+                .slice()
+                .sort((a, b) => (b.idVerificationSubmittedAt || '').localeCompare(a.idVerificationSubmittedAt || ''));
+            if (pendingCountEl) pendingCountEl.textContent = pending.length;
+            if (pendingTable) {
+                pendingTable.innerHTML = pending.length === 0
+                    ? `<tr><td colspan="6" class="text-center text-muted py-4"><i class="fa-solid fa-circle-check fa-2x mb-2 d-block text-success"></i>لا توجد طلبات توثيق معلّقة حالياً.</td></tr>`
+                    : pending.map(m => `
+                        <tr>
+                            <td><strong class="text-success">${escapeHtml(m.profileNumber)}</strong></td>
+                            <td>${escapeHtml(m.fullName)}${m.idVerificationStatus === 'approved' ? ' <span class="verified-text"><i class="fa-solid fa-check"></i></span>' : ''}</td>
+                            <td>${escapeHtml(m.gender === 'male' ? 'ذكر' : 'أنثى')}</td>
+                            <td>${formatDateTimeGlobal(m.idVerificationSubmittedAt || '')}</td>
+                            <td class="text-center">
+                                <img src="${escapeHtml(m.idImageUrl)}" alt="صورة الهوية" style="width:46px;height:46px;object-fit:cover;border-radius:6px;border:2px solid #f5a623;cursor:pointer;" onclick="reviewIdVerification(${m.id})" title="اضغط للمعاينة والمراجعة">
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-success me-1" onclick="reviewIdVerification(${m.id})" title="فتح نافذة المراجعة"><i class="fa-solid fa-eye"></i> مراجعة</button>
+                            </td>
+                        </tr>
+                    `).join('');
+            }
+
+            // (ب) آخر القرارات المتخذة (آخر 30 يوماً): الحالة 'approved' أو 'rejected' مع طابع زمني حديث
+            if (recentTable) {
+                const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+                const recent = members
+                    .filter(m => (m.idVerificationStatus === 'approved' || m.idVerificationStatus === 'rejected') && m.idVerificationDecidedAt)
+                    .filter(m => new Date(m.idVerificationDecidedAt).getTime() >= thirtyDaysAgo)
+                    .slice()
+                    .sort((a, b) => (b.idVerificationDecidedAt || '').localeCompare(a.idVerificationDecidedAt || ''))
+                    .slice(0, 15);
+                recentTable.innerHTML = recent.length === 0
+                    ? `<tr><td colspan="5" class="text-center text-muted py-3">لا توجد قرارات سابقة حديثة.</td></tr>`
+                    : recent.map(m => {
+                        const approved = m.idVerificationStatus === 'approved';
+                        return `
+                        <tr>
+                            <td><strong class="text-success">${escapeHtml(m.profileNumber)}</strong></td>
+                            <td>${escapeHtml(m.fullName)}</td>
+                            <td>${approved
+                                ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check"></i> اعتمد</span>'
+                                : '<span class="badge bg-danger"><i class="fa-solid fa-xmark"></i> رُفض</span>'}</td>
+                            <td>${formatDateTimeGlobal(m.idVerificationDecidedAt || '')}</td>
+                            <td class="small text-muted">${approved ? '—' : escapeHtml(m.idVerificationRejectReason || 'لم يُحدد سبب')}</td>
+                        </tr>`;
+                    }).join('');
+            }
         };
 
         // ==================== مراجعة التحقق من الهوية (للمدير) ====================
@@ -7275,6 +7819,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                 bootstrap.Modal.getInstance(document.getElementById('idVerifyReviewModal')).hide();
                 showAlert('تم اعتماد هوية العضو ومنح شارة التوثيق ✅.', 'success');
                 renderMembersPillTables();
+                renderIdVerificationRequests();
                 renderNotifications();
                 sendPushToUser(userId, '✅ تم توثيق هويتك', 'تم اعتماد هويتك ومنحك شارة التوثيق الذهبية', { type: 'idApproved', url: './index.html' });
             } else if (decision === 'rejected') {
@@ -7286,6 +7831,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                 bootstrap.Modal.getInstance(document.getElementById('idVerifyReviewModal')).hide();
                 showAlert('تم رفض صورة الهوية.', 'warning');
                 renderMembersPillTables();
+                renderIdVerificationRequests();
                 renderNotifications();
                 sendPushToUser(userId, '⚠️ رفض صورة الهوية', 'سبب الرفض: ' + reason, { type: 'idRejected', url: './index.html' });
             }
@@ -8131,6 +8677,16 @@ body.dark-mode .chat-contact-accepted-bubble {
 
     <!-- شريط التنقل السفلي للهاتف -->
     <div id="mobile-bottom-nav" class="d-md-none"></div>
+
+    <!-- ===== فقاعة الدردشة العائمة (مثل مسنجر فيسبوك) — للأعضاء فقط ===== -->
+    <div id="chatFab" class="chat-fab d-none" role="button" tabindex="0" aria-label="فتح الدردشة" onclick="onChatFabClick(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();onChatFabClick(event);}">
+        <span class="chat-fab-label" id="chatFabLabel">الدردشة</span>
+        <div class="chat-fab-avatar" id="chatFabAvatar">
+            <i class="fa-solid fa-comments"></i>
+        </div>
+        <span class="chat-fab-badge d-none" id="chatFabBadge">0</span>
+        <button type="button" class="chat-fab-close d-none" id="chatFabClose" onclick="event.stopPropagation(); dismissChatFab();" aria-label="إخفاء الفقاعة">&times;</button>
+    </div>
 
 </body>
 </html>
