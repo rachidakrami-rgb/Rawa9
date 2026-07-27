@@ -479,6 +479,51 @@
         .profile-picture { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #c8102e; }
         .profile-picture-sm { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #c8102e; }
         .profile-picture-upload { max-width: 150px; max-height: 150px; border-radius: 12px; object-fit: cover; }
+        /* ===== شارة التوثيق الذهبية (هوية مُتحقق منها) ===== */
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffd700 0%, #f5a623 100%);
+            color: #5a3d00;
+            font-size: 0.75rem;
+            font-weight: 900;
+            box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,0.25);
+            cursor: help;
+            vertical-align: middle;
+            margin-right: 0.3rem;
+        }
+        .verified-badge.lg { width: 30px; height: 30px; font-size: 1rem; }
+        .verified-badge.sm { width: 16px; height: 16px; font-size: 0.55rem; }
+        .verified-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: linear-gradient(135deg, #fff7d6 0%, #ffe9a8 100%);
+            color: #7a5200;
+            border: 1px solid #f5c542;
+            border-radius: 999px;
+            padding: 0.15rem 0.6rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        body.dark-mode .verified-badge {
+            box-shadow: 0 0 0 2px #1f2430, 0 1px 4px rgba(0,0,0,0.5);
+        }
+        body.dark-mode .verified-text {
+            background: linear-gradient(135deg, #3d2e00 0%, #5a4200 100%);
+            color: #ffd700;
+            border-color: #7a5200;
+        }
+        .id-verify-status-pending { background: #fff3cd; border-color: #ffe08a; color: #7a5200; }
+        .id-verify-status-approved { background: #d4edda; border-color: #a3d9b1; color: #155724; }
+        .id-verify-status-rejected { background: #f8d7da; border-color: #f1aeb5; color: #721c24; }
+        body.dark-mode .id-verify-status-pending { background: #3d2e00; border-color: #7a5200; color: #ffd700; }
+        body.dark-mode .id-verify-status-approved { background: #0f3d20; border-color: #1d6a3a; color: #6dd09a; }
+        body.dark-mode .id-verify-status-rejected { background: #3d0f0f; border-color: #6a1d1d; color: #ff9a9a; }
         /* ==================== نقطة حالة الاتصال (متصل / غير متصل) ==================== */
         .avatar-status-wrap { position: relative; display: inline-block; line-height: 0; flex-shrink: 0; }
         .avatar-status-wrap .status-dot {
@@ -1738,6 +1783,17 @@ body.dark-mode .chat-contact-accepted-bubble {
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- ==================== التحقق من الهوية (اختياري) ==================== -->
+                                    <div class="mb-4">
+                                        <h5 class="text-success border-bottom pb-2 mb-3"><i class="fa-solid fa-id-card-clip"></i> التحقق من الهوية (اختياري)</h5>
+                                        <div id="id-verify-status-box" class="alert mb-3"></div>
+                                        <div id="id-verify-upload-section">
+                                            <div class="mb-2"><label class="form-label fw-semibold">رفع صورة بطاقة الهوية</label><input type="file" id="id-verify-input" class="form-control" accept="image/*"><small class="form-text text-muted d-block">سيتم إخفاء صورة الهوية عن جميع الأعضاء؛ يطّلع عليها المدير فقط للتحقق ومنحك شارة التوثيق الذهبية ✅. يُفضّل صورة واضحة بحجم لا يتجاوز 2 ميجابايت.</small></div>
+                                            <button type="button" id="id-verify-upload-btn" class="btn btn-outline-success btn-sm" onclick="uploadIdVerificationImage()"><i class="fa-solid fa-upload"></i> رفع صورة الهوية</button>
+                                            <div id="id-verify-progress" class="mt-2" style="display:none;"><div class="progress" style="height:8px;"><div id="id-verify-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%;"></div></div><span class="small text-muted" id="id-verify-progress-text">جاري الرفع...</span></div>
+                                        </div>
+                                    </div>
                                     <button type="submit" class="btn btn-brand w-100 py-2">حفظ التحديثات</button>
                                 </form>
                             </div>
@@ -1820,7 +1876,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                                 <!-- قسم فرعي 2: المنتسبون -->
                                 <div class="members-section" id="members-approved" style="display:none;">
                                     <div class="dashboard-card">
-                                        <div class="table-responsive"><table class="table table-hover align-middle"><thead class="table-light"><tr><th>الرقم المرجعي</th><th>الاسم</th><th id="members-approved-social-header" class="d-none">رابط التواصل</th><th>الجنس والعمر</th><th>الحالة المدنية</th><th class="text-center">عرض</th><th class="text-center">الإجراء</th></tr></thead><tbody id="members-approved-table"></tbody></table></div>
+                                        <div class="table-responsive"><table class="table table-hover align-middle"><thead class="table-light"><tr><th>الرقم المرجعي</th><th>الاسم</th><th id="members-approved-social-header" class="d-none">رابط التواصل</th><th>الجنس والعمر</th><th>الحالة المدنية</th><th class="text-center">عرض</th><th class="text-center">الهوية</th><th class="text-center">الإجراء</th></tr></thead><tbody id="members-approved-table"></tbody></table></div>
                                     </div>
                                 </div>
                                 <!-- قسم فرعي 3: محظور -->
@@ -2004,6 +2060,33 @@ body.dark-mode .chat-contact-accepted-bubble {
     <div class="modal fade" id="cleanupPreviewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-danger fw-bold"><i class="fa-solid fa-broom"></i> معاينة الحسابات الوهمية قبل الحذف</h5><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><p class="text-muted small mb-3">هذه هي الحسابات التي طابقت نمط التوليد التجريبي فقط (اسم مستخدم من نوع memberX + بريد ينتهي بـ example.com)، ولن يُحذف أي حساب غيرها. راجعها جيداً قبل التأكيد:</p><div class="table-responsive" style="max-height: 45vh; overflow-y: auto;"><table class="table table-sm table-hover align-middle"><thead class="table-light"><tr><th>الرقم المرجعي</th><th>اسم المستخدم</th><th>الاسم الكامل</th><th>البريد الإلكتروني</th></tr></thead><tbody id="cleanup-preview-table"></tbody></table></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء، لا تحذف شيئاً</button><button type="button" class="btn btn-danger" id="cleanup-confirm-btn" onclick="confirmDeleteFakeDemoMembers()"><i class="fa-solid fa-trash"></i> نعم، احذف هذه الحسابات فقط</button></div></div></div></div>
     <div class="modal fade" id="receiverRejectReasonModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-danger fw-bold"><i class="fa-solid fa-comment-slash"></i> سبب رفض طلب الاهتمام</h5><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">يرجى كتابة سبب رفضك لهذا الطلب، سيتم إرساله إلى الإدارة وإشعار العضو المرسل به:</label><textarea id="receiver-reject-reason-input" class="form-control" rows="3" placeholder="اكتب سبب الرفض هنا..."></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="button" class="btn btn-danger" onclick="submitReceiverRejectReason()">حفظ ورفض الطلب</button></div></div></div></div>
     <div class="modal fade" id="tempPasswordModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-success fw-bold"><i class="fa-solid fa-key"></i> كلمة المرور المؤقتة الجديدة</h5><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><p>تم إنشاء كلمة مرور مؤقتة جديدة لهذا العضو. يرجى إبلاغه بها فوراً، وسيُطلب منه تغييرها عند تسجيل الدخول التالي.</p><div class="temp-password-display" id="temp-password-display"></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div></div></div></div>
+    <!-- نافذة مراجعة التحقق من الهوية (للمدير فقط) -->
+    <div class="modal fade" id="idVerifyReviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" style="color:#7a5200;"><i class="fa-solid fa-id-card-clip"></i> مراجعة صورة الهوية - <span id="id-verify-review-name"></span></h5>
+                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="id-verify-review-user-id">
+                    <div class="text-center mb-3">
+                        <img id="id-verify-review-image" src="" alt="صورة الهوية" style="max-width:100%; max-height:60vh; border:2px solid #c8102e; border-radius:8px; cursor:zoom-in;" onclick="this.style.transform = this.style.transform === 'scale(1.5)' ? 'scale(1)' : 'scale(1.5)'; this.style.transition = 'transform 0.3s';">
+                        <p class="small text-muted mt-2"><i class="fa-solid fa-magnifying-glass-plus"></i> اضغط الصورة لتكبيرها</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">سبب الرفض (يُترك فارغاً عند القبول):</label>
+                        <textarea id="id-verify-reject-reason" class="form-control" rows="2" placeholder="مثال: الصورة غير واضحة، البيانات غير مطابقة..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-danger" onclick="submitIdVerificationDecision('rejected')"><i class="fa-solid fa-xmark"></i> رفض</button>
+                    <button type="button" class="btn btn-success" onclick="submitIdVerificationDecision('approved')"><i class="fa-solid fa-check"></i> قبول ومنح الشارة ✅</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="editAdminModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-dark fw-bold"><i class="fa-solid fa-user-tie"></i> تعديل حساب المسؤول / المشرف</h5><button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><input type="hidden" id="edit-admin-id"><div class="row"><div class="col-md-6 mb-3"><label class="form-label">الاسم الكامل</label><input type="text" id="edit-admin-fullname" class="form-control" required></div><div class="col-md-6 mb-3"><label class="form-label">رابط تواصل اجتماعي</label><input type="text" id="edit-admin-phone" class="form-control" required></div><div class="col-md-6 mb-3"><label class="form-label">اسم المستخدم</label><input type="text" id="edit-admin-username" class="form-control" required></div><div class="col-md-6 mb-3"><label class="form-label"><i class="fa-solid fa-envelope"></i> البريد الإلكتروني</label><input type="email" id="edit-admin-email" class="form-control" required></div><div class="col-md-6 mb-3"><label class="form-label">كلمة المرور الجديدة (اتركها فارغة للإبقاء على كلمة المرور الحالية)</label><input type="password" id="edit-admin-password" class="form-control" placeholder="••••••••" autocomplete="new-password"></div></div><div id="edit-admin-perms-container"><h6 class="fw-bold text-dark mt-2 mb-2"><i class="fa-solid fa-lock-open"></i> الصلاحيات:</h6><div class="row mb-2"><div class="col-md-6"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="edit-perm-manage-requests"><label class="form-check-label" for="edit-perm-manage-requests">إدارة طلبات التواصل</label></div></div><div class="col-md-6"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="edit-perm-manage-members"><label class="form-check-label" for="edit-perm-manage-members">إدارة الأعضاء</label></div></div><div class="col-md-6"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="edit-perm-ban-members"><label class="form-check-label" for="edit-perm-ban-members">حظر الأعضاء</label></div></div><div class="col-md-6"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="edit-perm-view-stats"><label class="form-check-label" for="edit-perm-view-stats">عرض الإحصائيات</label></div></div></div></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="button" class="btn btn-dark" onclick="submitEditAdmin()">حفظ التعديلات</button></div></div></div></div>
 
 
@@ -2628,6 +2711,131 @@ body.dark-mode .chat-contact-accepted-bubble {
                 removeBtn.style.display = 'none'; }
         }
 
+        // ==================== التحقق من الهوية (Identity Verification) ====================
+        // الهدف: رفع صورة بطاقة الهوية (مخفية عن الجميع، يطّلع عليها المدير فقط)
+        // ثم يُحقق منها المدير ويُفعّل شارة "هوية مُتحقق منها" الذهبية ✅ في بروفيل العضو.
+        // الحقول على كائن المستخدم:
+        //   idVerificationStatus: 'none' | 'pending' | 'approved' | 'rejected'
+        //   idImageUrl: <Cloudinary secure_url> (مخفية عن كل الأعضاء، يطّلع عليها المدير فقط)
+        //   idVerificationSubmittedAt: ISO timestamp
+        //   idVerificationDecidedAt: ISO timestamp (عند قرار المدير)
+        //   idVerificationRejectReason: نص (عند الرفض)
+        window.uploadIdVerificationImage = function() {
+            const fileInput = document.getElementById('id-verify-input');
+            const file = fileInput ? fileInput.files[0] : null;
+            if (!file) { showAlert('يرجى اختيار صورة بطاقة الهوية أولاً.', 'warning'); return; }
+            if (file.size > 2 * 1024 * 1024) { showAlert('حجم الصورة يتجاوز 2 ميجابايت.', 'danger'); return; }
+            if (!currentUser) return;
+            // منع الرفع المكرر إذا كان الطلب الحالي قيد المراجعة
+            if (currentUser.idVerificationStatus === 'pending') {
+                showAlert('طلبك قيد المراجعة حالياً، يرجى انتظار قرار الإدارة.', 'info');
+                return;
+            }
+            if (currentUser.idVerificationStatus === 'approved') {
+                showAlert('هويتك مُتحقَّق منها بالفعل ✅.', 'info');
+                return;
+            }
+            const progressDiv = document.getElementById('id-verify-progress');
+            const progressBar = document.getElementById('id-verify-progress-bar');
+            const progressText = document.getElementById('id-verify-progress-text');
+            if (progressDiv) { progressDiv.style.display = 'block'; progressBar.style.width = '0%'; progressText.textContent = 'جاري الرفع...'; }
+            const uploadBtn = document.getElementById('id-verify-upload-btn');
+            if (uploadBtn) uploadBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            formData.append('folder', 'id_verifications');
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload', true);
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable && progressBar) {
+                    const progress = (e.loaded / e.total) * 100;
+                    progressBar.style.width = progress + '%';
+                    if (progressText) progressText.textContent = 'جاري الرفع... ' + Math.round(progress) + '%';
+                }
+            };
+            xhr.onload = function() {
+                if (uploadBtn) uploadBtn.disabled = false;
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        const url = response.secure_url;
+                        if (!url) throw new Error('No URL');
+                        const users = getUsers();
+                        const idx = users.findIndex(u => u.id === currentUser.id);
+                        if (idx !== -1) {
+                            users[idx].idImageUrl = url;
+                            users[idx].idVerificationStatus = 'pending';
+                            users[idx].idVerificationSubmittedAt = new Date().toISOString();
+                            users[idx].idVerificationDecidedAt = '';
+                            users[idx].idVerificationRejectReason = '';
+                            saveUsers(users);
+                            currentUser = users[idx];
+                        }
+                        if (progressDiv) progressDiv.style.display = 'none';
+                        if (fileInput) fileInput.value = '';
+                        showAlert('تم رفع صورة الهوية بنجاح. ستتم مراجعتها من قبل الإدارة.', 'success');
+                        renderIdVerificationSection();
+                        renderNotifications();
+                    } catch (e) {
+                        if (progressDiv) progressDiv.style.display = 'none';
+                        showAlert('حدث خطأ أثناء معالجة استجابة الرفع.', 'danger');
+                    }
+                } else {
+                    if (progressDiv) progressDiv.style.display = 'none';
+                    showAlert('حدث خطأ أثناء رفع صورة الهوية. تأكد من اتصال الإنترنت.', 'danger');
+                }
+            };
+            xhr.onerror = function() {
+                if (uploadBtn) uploadBtn.disabled = false;
+                if (progressDiv) progressDiv.style.display = 'none';
+                showAlert('خطأ في الشبكة أثناء رفع صورة الهوية.', 'danger');
+            };
+            xhr.send(formData);
+        };
+
+        function renderIdVerificationSection() {
+            const statusBox = document.getElementById('id-verify-status-box');
+            const uploadSection = document.getElementById('id-verify-upload-section');
+            if (!statusBox || !uploadSection || !currentUser || currentUser.isAdmin) {
+                if (statusBox) statusBox.innerHTML = '';
+                if (uploadSection) uploadSection.style.display = 'none';
+                return;
+            }
+            const status = currentUser.idVerificationStatus || 'none';
+            let html = '';
+            let cls = 'alert-secondary';
+            if (status === 'none') {
+                html = '<i class="fa-solid fa-circle-info"></i> لم يتم رفع صورة هوية بعد. التحقق من الهوية اختياري ويمنحك شارة توثيق ذهبية ✅ في ملفك.';
+                cls = 'alert-info';
+                uploadSection.style.display = 'block';
+            } else if (status === 'pending') {
+                html = '<i class="fa-solid fa-clock"></i> طلبك قيد المراجعة من قبل الإدارة. سيظهر شارة التوثيق فور اعتماده.';
+                cls = 'id-verify-status-pending';
+                uploadSection.style.display = 'none';
+            } else if (status === 'approved') {
+                html = '<span class="verified-text"><i class="fa-solid fa-circle-check"></i> هوية مُتحقق منها</span> تم اعتماد هويتك بنجاح. تظهر شارة التوثيق الذهبية ✅ في ملفك الشخصي.';
+                cls = 'id-verify-status-approved';
+                uploadSection.style.display = 'none';
+            } else if (status === 'rejected') {
+                const reason = currentUser.idVerificationRejectReason || 'لم يُحدد سبب الرفض.';
+                html = '<i class="fa-solid fa-circle-xmark"></i> تم رفض صورة الهوية. السبب: ' + escapeHtml(reason) + '<br><small class="text-muted">يمكنك رفع صورة جديدة أوضح بعد التصحيح.</small>';
+                cls = 'id-verify-status-rejected';
+                uploadSection.style.display = 'block';
+            }
+            statusBox.className = 'alert mb-3 ' + cls;
+            statusBox.innerHTML = html;
+        }
+
+        // تنسيق شارة التوثيق الذهبية لعرضها في البطاقات (تُستدعى عند بناء HTML للبطاقة)
+        function verifiedBadgeHtml(user, size) {
+            if (!user || user.idVerificationStatus !== 'approved') return '';
+            const sz = size === 'lg' ? 'lg' : (size === 'sm' ? 'sm' : '');
+            return '<span class="verified-badge ' + sz + '" title="هوية مُتحقق منها"><i class="fa-solid fa-check"></i></span>';
+        }
+
         function removeProfilePicture() {
             if (!confirm('هل أنت متأكد من رغبتك في حذف الصورة الشخصية؟')) return;
             const users = getUsers();
@@ -2658,7 +2866,7 @@ body.dark-mode .chat-contact-accepted-bubble {
             const users = getUsers();
             const sender = users.find(u => u.id === senderId);
             if (!sender) { showAlert('لم يتم العثور على ملف المرسل.', 'danger'); return; }
-            document.getElementById('sender-profile-ref').textContent = sender.profileNumber;
+            document.getElementById('sender-profile-ref').innerHTML = verifiedBadgeHtml(sender) + escapeHtml(sender.profileNumber);
             document.getElementById('sender-profile-desc').textContent = sender.description || 'لا يوجد وصف';
             document.getElementById('sender-profile-interested').textContent = sender.interestedIn || 'لا يوجد';
             document.getElementById('sender-profile-age').textContent = sender.age + ' سنة';
@@ -4409,7 +4617,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                 }
             }
             renderUI();
-            if (viewId === 'view-profile' && currentUser && !currentUser.isAdmin) { loadProfilePicture(); }
+            if (viewId === 'view-profile' && currentUser && !currentUser.isAdmin) { loadProfilePicture(); renderIdVerificationSection(); }
             if (viewId === 'view-suggestions' && currentUser && !currentUser.isAdmin) { renderSuggestionsPage(); }
             renderNotifications();
         }
@@ -4677,7 +4885,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                     `<button onclick="logout()" class="btn btn-sm btn-outline-light"><i class="fa-solid fa-sign-out-alt"></i> خروج</button>`;
                 sidebarWelcome.innerHTML =
                     `<div class="sidebar-welcome-row">
-                        <span class="sidebar-welcome-text">مرحباً، <strong>${escapeHtml(currentUser.fullName)}</strong> (${escapeHtml(currentUser.profileNumber)})</span>
+                        <span class="sidebar-welcome-text">مرحباً، ${verifiedBadgeHtml(currentUser)}<strong>${escapeHtml(currentUser.fullName)}</strong> (${escapeHtml(currentUser.profileNumber)})</span>
                         <button type="button" class="sidebar-welcome-profile-btn ${activeViewId === 'view-profile' ? 'active' : ''}" onclick="switchView('view-profile')" title="ملفي الشخصي"><i class="fa-solid fa-user-gear"></i></button>
                     </div>`;
             } else {
@@ -4843,7 +5051,7 @@ body.dark-mode .chat-contact-accepted-bubble {
                                 <div class="browse-profile-header">
                                     ${profilePicHtml}
                                     <div>
-                                        <span class="badge bg-secondary p-2 fs-6">معرف: ${escapeHtml(p.profileNumber)}</span>
+                                        ${verifiedBadgeHtml(p)}<span class="badge bg-secondary p-2 fs-6">معرف: ${escapeHtml(p.profileNumber)}</span>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -5031,10 +5239,9 @@ body.dark-mode .chat-contact-accepted-bubble {
                             <div class="browse-profile-header">
                                 ${profilePicHtml}
                                 <div class="d-flex flex-column gap-1">
-                                    <span class="badge bg-secondary browse-id-badge">معرف: ${escapeHtml(p.profileNumber)}</span>
+                                    <span class="badge bg-secondary browse-id-badge">${verifiedBadgeHtml(p, 'sm')}معرف: ${escapeHtml(p.profileNumber)}</span>
                                     <span class="badge bg-success browse-match-badge">توافق: ${score}%</span>
                                     ${trustBadgeHtml(computeTrustScore(p))}
-                                    ${p.identityVerified ? '<i class="fa-solid fa-shield-halved text-success" title="هوية مُتحقق منها"></i>' : ''}
                                 </div>
                             </div>
                             <div class="row">
@@ -5940,6 +6147,22 @@ body.dark-mode .chat-contact-accepted-bubble {
                         text: `من ${escapeHtml(reporter ? reporter.fullName : 'غير معروف')} ضد ${escapeHtml(reported ? reported.fullName : 'غير معروف')}`,
                         nav: () => { switchView('view-admin');
                             switchAdminPill('tab-reports'); }
+                    });
+                });
+            }
+
+            // إشعارات طلبات التحقق من الهوية المعلّقة (للمدير فقط)
+            if (perms.manageMembers) {
+                users.filter(u => !u.isAdmin && u.idVerificationStatus === 'pending' && u.idImageUrl).forEach(u => {
+                    notifs.push({
+                        key: `idverify-${u.id}-${u.idVerificationSubmittedAt || ''}`,
+                        icon: 'fa-id-card-clip',
+                        color: 'text-warning',
+                        title: '🪪 طلب توثيق هوية',
+                        text: `${escapeHtml(u.fullName)} (${escapeHtml(u.profileNumber)}) رفع صورة هوية بانتظار المراجعة`,
+                        nav: () => { switchView('view-admin');
+                            activateAdminTab('tab-members');
+                            setTimeout(() => reviewIdVerification(u.id), 400); }
                     });
                 });
             }
@@ -6884,8 +7107,20 @@ body.dark-mode .chat-contact-accepted-bubble {
             const approvedTable = document.getElementById('members-approved-table');
             if (approvedTable) {
                 approvedTable.innerHTML = approvedMembers.length === 0
-                    ? `<tr><td colspan="7" class="text-center text-muted py-3">لا يوجد منتسبون.</td></tr>`
-                    : approvedMembers.map(m => `
+                    ? `<tr><td colspan="8" class="text-center text-muted py-3">لا يوجد منتسبون.</td></tr>`
+                    : approvedMembers.map(m => {
+                        const idStatus = m.idVerificationStatus || 'none';
+                        let idCell = '';
+                        if (idStatus === 'approved') {
+                            idCell = `<span class="verified-text"><i class="fa-solid fa-check"></i> موثّق</span>`;
+                        } else if (idStatus === 'pending') {
+                            idCell = `<button type="button" class="btn btn-sm btn-warning text-white" onclick="reviewIdVerification(${m.id})" title="مراجعة طلب التوثيق"><i class="fa-solid fa-id-card-clip"></i> قيد المراجعة</button>`;
+                        } else if (idStatus === 'rejected') {
+                            idCell = `<span class="badge bg-danger" title="${escapeHtml(m.idVerificationRejectReason || 'تم الرفض')}">مرفوضة</span>`;
+                        } else {
+                            idCell = `<span class="text-muted small">لم يُرفع</span>`;
+                        }
+                        return `
                         <tr>
                             <td><strong class="text-success">${escapeHtml(m.profileNumber)}</strong></td>
                             <td><strong>${escapeHtml(m.fullName)}</strong></td>
@@ -6898,14 +7133,15 @@ body.dark-mode .chat-contact-accepted-bubble {
                             <td class="text-center">
                                 <button type="button" onclick='openFullDescriptionModal(${m.id})' class="btn btn-sm btn-outline-success" title="عرض الوصف"><i class="fa-solid fa-eye"></i></button>
                             </td>
+                            <td class="text-center">${idCell}</td>
                             <td class="text-center">
                                 <div class="d-flex gap-1 justify-content-center">
                                     <button onclick="openBanModal(${m.id})" class="btn btn-sm btn-warning text-white" title="حظر" ${perms.banMembers ? '' : 'disabled'}><i class="fa-solid fa-ban"></i> حظر</button>
                                     <button onclick="deleteMember(${m.id})" class="btn btn-sm btn-danger" title="حذف" ${isMainAdmin ? '' : 'disabled'}><i class="fa-solid fa-trash"></i> حذف</button>
                                 </div>
                             </td>
-                        </tr>
-                    `).join('');
+                        </tr>`;
+                    }).join('');
             }
 
             // ===== قسم 3: محظور =====
@@ -6961,14 +7197,14 @@ body.dark-mode .chat-contact-accepted-bubble {
                         <tr>
                             <td><strong class="text-success">${escapeHtml(u.profileNumber)}</strong></td>
                             <td>${escapeHtml(u.fullName)}</td>
-                            <td>${hasValidLink ? `<a href="${escapeHtml(u.phone)}" target="_blank" rel="noopener" onclick="document.getElementById('pending-verify-${u.id}').disabled=false;"><i class="fa-solid fa-link"></i> فتح الرابط</a>` : `<span class="badge bg-danger" title="${escapeHtml(u.phone || '')}"><i class="fa-solid fa-triangle-exclamation"></i> رابط غير صالح الصيغة</span>`}</td>
+                            <td>${hasValidLink ? `<a href="${escapeHtml(u.phone)}" target="_blank" rel="noopener" onclick="window._enablePendingVerify(${u.id});"><i class="fa-solid fa-link"></i> فتح الرابط</a>` : `<span class="badge bg-danger" title="${escapeHtml(u.phone || '')}"><i class="fa-solid fa-triangle-exclamation"></i> رابط غير صالح الصيغة</span>`}</td>
                             <td>${escapeHtml(u.email || 'غير مسجل')}</td>
                             <td>${escapeHtml(u.gender === 'male' ? 'ذكر' : 'أنثى')}</td>
                             <td>${escapeHtml(u.age)} سنة</td>
                             <td>${regDate}</td>
                             <td class="text-center">
                                 <div class="form-check form-check-inline mb-1" ${hasValidLink ? 'title="اضغط رابط التواصل أولاً لتفعيل هذا الخيار"' : ''}>
-                                    <input class="form-check-input" type="checkbox" id="pending-verify-${u.id}" ${hasValidLink ? 'disabled' : ''} onchange="document.getElementById('pending-approve-${u.id}').disabled=!this.checked;">
+                                    <input class="form-check-input" type="checkbox" id="pending-verify-${u.id}" ${hasValidLink ? 'data-locked="1"' : ''} onchange="window._togglePendingApprove(${u.id}, this.checked);">
                                     <label class="form-check-label small" for="pending-verify-${u.id}">تحققت من الرابط</label>
                                 </div><br>
                                 <button id="pending-approve-${u.id}" onclick="approveMembership(${u.id})" class="btn btn-sm btn-success me-1" disabled><i class="fa-solid fa-check"></i> قبول</button>
@@ -6977,7 +7213,83 @@ body.dark-mode .chat-contact-accepted-bubble {
                         </tr>
                     `;
             }).join('');
+            // تهيئة الحالة: إذا لم يكن الرابط صالحاً، يكون الـ checkbox مفعّلاً قابلاً للنقر مباشرةً
+            pending.forEach(u => {
+                const hasValidLink = isValidSocialLink(u.phone);
+                if (!hasValidLink) {
+                    const cb = document.getElementById('pending-verify-' + u.id);
+                    if (cb) cb.disabled = false;
+                }
+            });
         }
+
+        // تفعيل الـ checkbox بعد فتح رابط التواصل (يحل مشكلة عدم استجابة checkbox
+        // "تحققت من الرابط" بسبب استخدام disabled السابق الذي يمنع onchange في بعض المتصفحات)
+        window._enablePendingVerify = function(userId) {
+            const cb = document.getElementById('pending-verify-' + userId);
+            if (cb) {
+                cb.disabled = false;
+                cb.removeAttribute('data-locked');
+                cb.focus();
+            }
+        };
+
+        // تفعيل/تعطيل زر القبول بناءً على حالة الـ checkbox
+        window._togglePendingApprove = function(userId, checked) {
+            const btn = document.getElementById('pending-approve-' + userId);
+            if (btn) btn.disabled = !checked;
+        };
+
+        // ==================== مراجعة التحقق من الهوية (للمدير) ====================
+        window.reviewIdVerification = function(userId) {
+            if (!hasPermission('manageMembers')) return;
+            const users = getUsers();
+            const u = users.find(x => x.id === userId);
+            if (!u) return;
+            if (!u.idImageUrl || u.idVerificationStatus !== 'pending') {
+                showAlert('لا توجد صورة هوية قيد المراجعة لهذا العضو.', 'warning');
+                return;
+            }
+            document.getElementById('id-verify-review-user-id').value = userId;
+            document.getElementById('id-verify-review-name').textContent = u.fullName + ' (' + u.profileNumber + ')';
+            document.getElementById('id-verify-review-image').src = u.idImageUrl;
+            document.getElementById('id-verify-reject-reason').value = '';
+            // إعادة ضبط التكبير
+            const img = document.getElementById('id-verify-review-image');
+            img.style.transform = 'scale(1)';
+            new bootstrap.Modal(document.getElementById('idVerifyReviewModal')).show();
+        };
+
+        window.submitIdVerificationDecision = function(decision) {
+            if (!hasPermission('manageMembers')) return;
+            const userId = parseInt(document.getElementById('id-verify-review-user-id').value, 10);
+            if (!userId) return;
+            const users = getUsers();
+            const idx = users.findIndex(u => u.id === userId);
+            if (idx === -1) return;
+            if (decision === 'approved') {
+                users[idx].idVerificationStatus = 'approved';
+                users[idx].idVerificationDecidedAt = new Date().toISOString();
+                users[idx].idVerificationRejectReason = '';
+                saveUsers(users);
+                bootstrap.Modal.getInstance(document.getElementById('idVerifyReviewModal')).hide();
+                showAlert('تم اعتماد هوية العضو ومنح شارة التوثيق ✅.', 'success');
+                renderMembersPillTables();
+                renderNotifications();
+                sendPushToUser(userId, '✅ تم توثيق هويتك', 'تم اعتماد هويتك ومنحك شارة التوثيق الذهبية', { type: 'idApproved', url: './index.html' });
+            } else if (decision === 'rejected') {
+                const reason = document.getElementById('id-verify-reject-reason').value.trim() || 'لم يُحدد سبب';
+                users[idx].idVerificationStatus = 'rejected';
+                users[idx].idVerificationDecidedAt = new Date().toISOString();
+                users[idx].idVerificationRejectReason = reason;
+                saveUsers(users);
+                bootstrap.Modal.getInstance(document.getElementById('idVerifyReviewModal')).hide();
+                showAlert('تم رفض صورة الهوية.', 'warning');
+                renderMembersPillTables();
+                renderNotifications();
+                sendPushToUser(userId, '⚠️ رفض صورة الهوية', 'سبب الرفض: ' + reason, { type: 'idRejected', url: './index.html' });
+            }
+        };
 
         window.approveMembership = function(userId) {
             if (!hasPermission('manageMembers')) return;
