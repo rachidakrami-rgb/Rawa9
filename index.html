@@ -887,11 +887,40 @@
         .chat-bubble-sender { font-size: 0.72rem; font-weight: 700; opacity: 0.8; margin-bottom: 0.15rem; }
         .chat-bubble-alert { border: 2px solid #0dcaf0 !important; background: #e7f9fd !important; color: #055160 !important; }
         body.dark-mode .chat-bubble-alert { background: #123a44 !important; color: #cceef7 !important; }
+        body.dark-mode .voice-mic-btn { background: #0aa7c2; border-color: #0aa7c2; }
         .chat-bubble-alert-badge { font-size: 0.72rem; font-weight: 800; color: #0aa7c2; margin-bottom: 0.2rem; }
         .chat-bubble-text { white-space: pre-wrap; word-break: break-word; }
         .chat-bubble-time { font-size: 0.68rem; opacity: 0.65; margin-top: 0.2rem; text-align: right; }
         .chat-input-footer { gap: 0.5rem; }
         .chat-input-footer input { flex: 1; }
+
+/* ===== أنماط زر الرسائل الصوتية وتسجيل الصوت ===== */
+        .voice-mic-btn { flex-shrink: 0; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 1.1rem; padding: 0; background: #0aa7c2; border-color: #0aa7c2; color: #fff; transition: all 0.2s; }
+        .voice-mic-btn:hover { background: #0889a0; border-color: #0889a0; color: #fff; transform: scale(1.05); }
+        .voice-mic-btn:focus { box-shadow: 0 0 0 3px rgba(10, 167, 194, 0.3); }
+        .voice-mic-btn.recording { background: #dc3545 !important; border-color: #dc3545 !important; color: #fff !important; animation: voiceMicPulse 1.2s ease-in-out infinite; }
+        @keyframes voiceMicPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5); } 50% { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); } }
+        .voice-record-indicator { display: flex; align-items: center; gap: 0.5rem; background: #f8d7da; border: 1px solid #f5c2c7; border-radius: 50px; padding: 0.3rem 0.6rem; flex: 1; }
+        .voice-record-indicator.d-none { display: none !important; }
+        .voice-record-dot { width: 10px; height: 10px; border-radius: 50%; background: #dc3545; animation: voiceRecordBlink 1s ease-in-out infinite; flex-shrink: 0; }
+        @keyframes voiceRecordBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .voice-record-time { font-size: 0.9rem; font-weight: 700; color: #dc3545; font-variant-numeric: tabular-nums; flex: 1; }
+        .voice-cancel-btn, .voice-send-btn { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; }
+        /* عند بدء التسجيل نُخفي حقل الإدخال وزر الإرسال وزر الميك لعرض مؤشر التسجيل بدلاً منها */
+        .chat-input-footer.recording > input,
+        .chat-input-footer.recording > .btn-brand,
+        .chat-input-footer.recording > .voice-mic-btn { display: none !important; }
+
+/* ===== أنماط فقاعة الرسالة الصوتية في الدردشة ===== */
+        .chat-voice-bubble { display: flex; align-items: center; gap: 0.5rem; min-width: 180px; }
+        .chat-voice-play-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.25); color: inherit; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 0.95rem; }
+        .chat-bubble-theirs .chat-voice-play-btn { background: rgba(0,0,0,0.08); }
+        .chat-voice-play-btn:hover { background: rgba(255,255,255,0.4); }
+        .chat-bubble-theirs .chat-voice-play-btn:hover { background: rgba(0,0,0,0.15); }
+        .chat-voice-wave { flex: 1; height: 28px; display: flex; align-items: center; gap: 2px; }
+        .chat-voice-wave .wave-bar { flex: 1; background: currentColor; opacity: 0.5; border-radius: 2px; min-height: 4px; }
+        .chat-voice-duration { font-size: 0.72rem; opacity: 0.8; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+        .chat-voice-audio { width: 100%; max-width: 240px; height: 36px; }
 
 /* ===== أنماط تبويبات طلبات الاهتمام (Pills) ===== */
 .requests-pill-nav {
@@ -1300,8 +1329,9 @@ body.dark-mode .chat-contact-accepted-bubble {
     position: relative;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.3rem;
-    padding: 0.22rem 0.6rem 0.22rem 0.55rem;
+    padding: 0.24rem 0.42rem;
     border-radius: 999px;
     font-size: 0.72rem;
     font-weight: 700;
@@ -1899,7 +1929,7 @@ body.dark-mode .id-verification-section {
                                         <div class="id-verification-section">
                                             <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                                                 <span class="badge p-2" id="profile-id-status-badge">غير مطلوب</span>
-                                                <span class="small text-muted">ارفع صورة هويتك الشخصية ليقوم المسؤول بمراجعتها ومنحك شارة "موثّق" الذهبية.</span>
+                                                <span class="small text-muted">ارفع صورة هويتك الشخصية ليقوم المسؤول بمراجعتها ومنحك شارة التوثيق الذهبية.</span>
                                             </div>
                                             <div id="profile-id-image-preview-wrap" class="mb-2"></div>
                                             <div class="mb-2"><label class="form-label fw-semibold">اختر صورة الهوية</label><input type="file" id="profile-id-image-input" class="form-control" accept="image/*"><small class="form-text text-muted">صورة واضحة، يُفضّل ألا تتجاوز 2 ميجابايت.</small></div>
@@ -2128,7 +2158,7 @@ body.dark-mode .id-verification-section {
                         <div class="admin-section" id="tab-id-verifications" style="display:none;">
                             <div class="dashboard-card mb-4">
                                 <h5 class="mb-3 font-weight-bold text-warning"><i class="fa-solid fa-id-card"></i> طلبات التوثيق قيد المراجعة</h5>
-                                <p class="text-muted">قائمة الأعضاء الذين رفعوا صورة هوية شخصية وطلبوا الحصول على شارة "موثّق". افتح الملف لمعاينة الصورة ثم قرر قبول أو رفض الطلب.</p>
+                                <p class="text-muted">قائمة الأعضاء الذين رفعوا صورة هوية شخصية وطلبوا الحصول على شارة التوثيق. افتح الملف لمعاينة الصورة ثم قرر قبول أو رفض الطلب.</p>
                                 <div class="table-responsive">
                                     <table class="table table-hover align-middle">
                                         <thead class="table-light">
@@ -2289,9 +2319,16 @@ body.dark-mode .id-verification-section {
                 <div class="modal-body">
                     <div id="supportChatMessages" class="chat-messages-box"></div>
                 </div>
-                <div class="modal-footer chat-input-footer">
+                <div class="modal-footer chat-input-footer" id="supportChatInputRow">
                     <input type="text" id="supportChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendSupportChatMessage();}">
                     <button type="button" class="btn btn-brand" onclick="sendSupportChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    <button type="button" id="supportVoiceBtn" class="btn btn-outline-secondary voice-mic-btn" onclick="toggleVoiceRecord('support')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
+                    <div id="supportVoiceRecordIndicator" class="voice-record-indicator d-none">
+                        <span class="voice-record-dot"></span>
+                        <span id="supportVoiceRecordTime" class="voice-record-time">0:00</span>
+                        <button type="button" class="btn btn-sm btn-danger voice-cancel-btn" onclick="cancelVoiceRecord('support')" title="إلغاء"><i class="fa-solid fa-xmark"></i></button>
+                        <button type="button" class="btn btn-sm btn-success voice-send-btn" onclick="stopAndSendVoiceRecord('support')" title="إرسال"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2339,6 +2376,13 @@ body.dark-mode .id-verification-section {
                 <div class="modal-footer chat-input-footer" id="directChatInputRow">
                     <input type="text" id="directChatInput" class="form-control" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendDirectChatMessage();}">
                     <button type="button" class="btn btn-brand" onclick="sendDirectChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    <button type="button" id="directVoiceBtn" class="btn btn-outline-secondary voice-mic-btn" onclick="toggleVoiceRecord('direct')" title="رسالة صوتية"><i class="fa-solid fa-microphone"></i></button>
+                    <div id="directVoiceRecordIndicator" class="voice-record-indicator d-none">
+                        <span class="voice-record-dot"></span>
+                        <span id="directVoiceRecordTime" class="voice-record-time">0:00</span>
+                        <button type="button" class="btn btn-sm btn-danger voice-cancel-btn" onclick="cancelVoiceRecord('direct')" title="إلغاء"><i class="fa-solid fa-xmark"></i></button>
+                        <button type="button" class="btn btn-sm btn-success voice-send-btn" onclick="stopAndSendVoiceRecord('direct')" title="إرسال"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3558,6 +3602,23 @@ body.dark-mode .id-verification-section {
             if (changed) saveAdminChats(chats);
         }
 
+        // تعليم رسائل المحادثة المباشرة كمقروءة للعضو الحالي.
+        // مهم جداً: بدون هذه الدالة، يظل حقل seenBy للرسائل false للأبد، فيُولِّد منشئ
+        // الإشعارات إشعاراً جديداً عند كل تحديث للبيانات (لأنه لا يتحقق من seenBy)، ويشعر
+        // المستخدم أن "الإشعارات القديمة تتجدد بلا توقف". الآن تُعلَّم الرسائل كمقروءة
+        // فعلياً عند فتح المحادثة أو عند مسح الإشعارات، فلا تُولَّد لها إشعارات جديدة.
+        function markDirectChatSeen(chatId) {
+            if (!currentUser || chatId === null || chatId === undefined) return;
+            const chats = getDirectChats();
+            const chat = chats.find(c => c.id === chatId);
+            if (!chat) return;
+            let changed = false;
+            (chat.messages || []).forEach(m => {
+                if (m.senderId !== currentUser.id && !m.seenBy) { m.seenBy = true; changed = true; }
+            });
+            if (changed) saveDirectChats(chats);
+        }
+
         function renderSupportChatThread() {
             const titleEl = document.getElementById('supportChatModalTitle');
             const bodyEl = document.getElementById('supportChatMessages');
@@ -3574,13 +3635,17 @@ body.dark-mode .id-verification-section {
             } else {
                 bodyEl.innerHTML = messages.map(m => {
                     const mine = currentUser.isAdmin ? m.senderRole === 'admin' : m.senderRole === 'member';
+                    // محتوى الفقاعة: نص للرسائل العادية، مشغل صوتي للرسائل الصوتية
+                    const contentHtml = m.type === 'voice'
+                        ? renderVoiceMessageContent(m)
+                        : `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
                     return `
                             <div class="chat-bubble-row ${mine ? 'mine' : 'theirs'}">
                                 <div class="chat-bubble ${mine ? 'chat-bubble-mine' : 'chat-bubble-theirs'} ${m.isAlert ? 'chat-bubble-alert' : ''}">
                                     ${m.isAlert ? '<div class="chat-bubble-alert-badge"><i class="fa-solid fa-bell"></i> تنبيه إداري</div>' : ''}
                                     ${m.senderRole === 'admin' && currentUser.isAdmin === false ? '<div class="chat-bubble-sender">الإدارة</div>' : ''}
                                     ${m.senderRole === 'member' && currentUser.isAdmin === true ? `<div class="chat-bubble-sender">${escapeHtml(m.senderName || 'العضو')}</div>` : ''}
-                                    <div class="chat-bubble-text">${escapeHtml(m.text)}</div>
+                                    ${contentHtml}
                                     <div class="chat-bubble-time">${formatDateTimeGlobal(m.timestamp)}</div>
                                 </div>
                             </div>
@@ -3588,6 +3653,25 @@ body.dark-mode .id-verification-section {
                 }).join('');
             }
             bodyEl.scrollTop = bodyEl.scrollHeight;
+        }
+
+        // عرض محتوى الرسالة الصوتية: مشغل صوت HTML5 مع شريط مدة وأيقونة
+        function renderVoiceMessageContent(m) {
+            const dur = escapeHtml(m.duration || '');
+            const url = escapeHtml(m.audioUrl || '');
+            return `
+                <div class="chat-voice-bubble">
+                    <button type="button" class="chat-voice-play-btn" onclick="this.nextElementSibling.play(); this.style.display='none'; this.nextElementSibling.nextElementSibling.style.display='flex';" title="تشغيل">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <audio src="${url}" preload="metadata" style="display:none" onended="this.previousElementSibling.style.display='flex'; this.nextElementSibling.style.display='none';"></audio>
+                    <div class="chat-voice-wave" style="display:none">
+                        <i class="fa-solid fa-volume-high" style="opacity:0.7"></i>
+                    </div>
+                    <span class="chat-voice-duration"><i class="fa-solid fa-microphone"></i> ${dur}</span>
+                    <a href="${url}" target="_blank" class="chat-voice-duration" title="تحميل/فتح"><i class="fa-solid fa-download"></i></a>
+                </div>
+            `;
         }
 
         window.sendSupportChatMessage = function() {
@@ -3688,6 +3772,9 @@ body.dark-mode .id-verification-section {
             activeDirectChatId = chat.id;
             activeDirectChatReadOnly = false;
             _lastOpenDirectChatMsgCount = (chat.messages || []).length;
+            // تعليم جميع رسائل الطرف الآخر كمقروءة فور فتح المحادثة، حتى لا تبقى
+            // تُولِّد إشعارات "رسالة جديدة" قديمة تتكرر بلا توقف
+            markDirectChatSeen(chat.id);
             renderDirectChatThread();
             new bootstrap.Modal(document.getElementById('directChatModal')).show();
         };
@@ -3731,6 +3818,12 @@ body.dark-mode .id-verification-section {
                 inputRow.classList.remove('d-none');
             }
 
+            // إخفاء زر الميكروفون في وضع القراءة فقط (مراجعة الإدارة للسجل)
+            const directMicBtn = document.getElementById('directVoiceBtn');
+            const directRecIndicator = document.getElementById('directVoiceRecordIndicator');
+            if (directMicBtn) directMicBtn.style.display = activeDirectChatReadOnly ? 'none' : '';
+            if (directRecIndicator && activeDirectChatReadOnly) directRecIndicator.classList.add('d-none');
+
             const messages = chat.messages || [];
             if (messages.length === 0) {
                 bodyEl.innerHTML = '<p class="text-center text-muted py-3">لم يتم تبادل رسائل بعد.</p>';
@@ -3760,7 +3853,10 @@ body.dark-mode .id-verification-section {
                     const sender = allUsers.find(u => u.id === m.senderId);
                     const senderName = sender ? sender.profileNumber : '؟';
                     const timeStr = formatDateTimeGlobal(m.timestamp);
-                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}"><div class="chat-bubble-sender">${escapeHtml(senderName)}</div><div class="chat-bubble-text">${escapeHtml(m.text)}</div><div class="chat-bubble-time">${timeStr}</div></div></div>`;
+                    const contentHtml = m.type === 'voice'
+                        ? renderVoiceMessageContent(m)
+                        : `<div class="chat-bubble-text">${escapeHtml(m.text)}</div>`;
+                    return `<div class="chat-bubble-row ${isMine ? 'mine' : 'theirs'}"><div class="chat-bubble ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}"><div class="chat-bubble-sender">${escapeHtml(senderName)}</div>${contentHtml}<div class="chat-bubble-time">${timeStr}</div></div></div>`;
                 }).join('');
             }
             bodyEl.scrollTop = bodyEl.scrollHeight;
@@ -3820,6 +3916,196 @@ body.dark-mode .id-verification-section {
             const otherId = chat.userAId === currentUser.id ? chat.userBId : chat.userAId;
             sendPushToUser(otherId, '💬 رسالة جديدة', 'رسالة جديدة من ' + (currentUser.profileNumber || currentUser.fullName), { type: 'directChat', url: './index.html' });
         };
+
+        // ==================== الرسائل الصوتية في الدردشة ====================
+        // نظام تسجيل صوتي عبر MediaRecorder API، رفع الملف إلى Cloudinary (نوع مورد "video"
+        // الذي يدعم الصوت)، ثم إرساله كرسالة بنوع "voice" مع رابط الصوت ومدته.
+        // يدعم كلتا قناتي الدردشة: الدعم (support) والمباشرة (direct).
+        const _voiceState = {
+            support: { recorder: null, chunks: [], stream: null, timer: null, seconds: 0, uploading: false },
+            direct:  { recorder: null, chunks: [], stream: null, timer: null, seconds: 0, uploading: false }
+        };
+
+        // اختيار أفضل صيغة صوت يدعمها المتصفح للتسجيل
+        function _pickVoiceMimeType() {
+            const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/mpeg'];
+            for (const c of candidates) {
+                if (window.MediaRecorder && MediaRecorder.isTypeSupported(c)) return c;
+            }
+            return ''; // افتراضي
+        }
+
+        // تنسيق الثواني إلى دقائق:ثواني (مثال: 73 → "1:13")
+        function _formatVoiceDuration(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return m + ':' + String(s).padStart(2, '0');
+        }
+
+        // رفع ملف صوتي إلى Cloudinary باستخدام endpoint الخاص بالفيديو/الصوت
+        function _uploadVoiceToCloudinary(blob, callback) {
+            const formData = new FormData();
+            formData.append('file', blob, 'voice_message.' + (blob.type.split('/')[1] || 'webm'));
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            formData.append('folder', 'voice_messages');
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`, true);
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try { callback(null, JSON.parse(xhr.responseText).secure_url); }
+                    catch (e) { callback(e); }
+                } else { callback(new Error('Upload failed: ' + xhr.status)); }
+            };
+            xhr.onerror = function() { callback(new Error('Network error')); };
+            xhr.send(formData);
+        }
+
+        // بدء/إيقاف التسجيل الصوتي حسب نوع الدردشة
+        window.toggleVoiceRecord = async function(chatType) {
+            const st = _voiceState[chatType];
+            if (!st) return;
+            if (st.recorder && st.recorder.state === 'recording') {
+                // التسجيل جارٍ → إيقاف وإرسال
+                stopAndSendVoiceRecord(chatType);
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showAlert('متصفحك لا يدعم تسجيل الصوت.', 'danger');
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                st.stream = stream;
+                st.chunks = [];
+                st.seconds = 0;
+                const opts = { mimeType: _pickVoiceMimeType() };
+                const recorder = opts.mimeType ? new MediaRecorder(stream, opts) : new MediaRecorder(stream);
+                st.recorder = recorder;
+                recorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) st.chunks.push(e.data); };
+                recorder.start();
+                // مؤقت التسجيل
+                const timeEl = document.getElementById(chatType + 'VoiceRecordTime');
+                st.timer = setInterval(function() {
+                    st.seconds++;
+                    if (timeEl) timeEl.textContent = _formatVoiceDuration(st.seconds);
+                    // حد أقصى: دقيقتان
+                    if (st.seconds >= 120) stopAndSendVoiceRecord(chatType);
+                }, 1000);
+                // تحديث الواجهة: إظهار مؤشر التسجيل، إخفاء حقل الإدخال
+                const footer = document.getElementById(chatType === 'support' ? 'supportChatInputRow' : 'directChatInputRow') ||
+                               document.querySelector('#supportChatModal .chat-input-footer');
+                const indicator = document.getElementById(chatType + 'VoiceRecordIndicator');
+                const micBtn = document.getElementById(chatType + 'VoiceBtn');
+                if (indicator) indicator.classList.remove('d-none');
+                if (footer) footer.classList.add('recording');
+                if (micBtn) micBtn.classList.add('recording');
+            } catch (e) {
+                console.error('Voice record error:', e);
+                showAlert('تعذّر الوصول إلى الميكروفون. تأكد من منح الإذن.', 'danger');
+                _cleanupVoiceState(chatType);
+            }
+        };
+
+        // إلغاء التسجيل دون إرسال
+        window.cancelVoiceRecord = function(chatType) {
+            const st = _voiceState[chatType];
+            if (!st) return;
+            if (st.recorder && st.recorder.state === 'recording') {
+                try { st.recorder.stop(); } catch (e) {}
+            }
+            _cleanupVoiceState(chatType);
+            _resetVoiceUI(chatType);
+        };
+
+        // إيقاف التسجيل وإرسال الرسالة الصوتية
+        window.stopAndSendVoiceRecord = function(chatType) {
+            const st = _voiceState[chatType];
+            if (!st || !st.recorder || st.recorder.state !== 'recording') return;
+            const duration = st.seconds;
+            const chatCtx = chatType; // التقاط للإغلاق
+            st.recorder.onstop = function() {
+                const blob = new Blob(st.chunks, { type: st.recorder.mimeType || 'audio/webm' });
+                _cleanupVoiceState(chatCtx);
+                _resetVoiceUI(chatCtx);
+                if (blob.size < 500) { showAlert('التسجيل قصير جداً، حاول مرة أخرى.', 'warning'); return; }
+                if (blob.size > 5 * 1024 * 1024) { showAlert('التسجيل طويل جداً (الحد 5 ميجابايت).', 'danger'); return; }
+                // رفع ثم إرسال
+                const sendBtn = document.getElementById(chatCtx + 'VoiceBtn');
+                if (sendBtn) { sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; sendBtn.disabled = true; }
+                _uploadVoiceToCloudinary(blob, function(err, url) {
+                    if (sendBtn) { sendBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>'; sendBtn.disabled = false; }
+                    if (err) { console.error(err); showAlert('تعذّر رفع التسجيل الصوتي.', 'danger'); return; }
+                    _sendVoiceMessage(chatCtx, url, duration);
+                });
+            };
+            try { st.recorder.stop(); } catch (e) { _cleanupVoiceState(chatCtx); _resetVoiceUI(chatCtx); }
+        };
+
+        // تنظيف موارد التسجيل (إيقاف المؤقت، إغلاق الستريم)
+        function _cleanupVoiceState(chatType) {
+            const st = _voiceState[chatType];
+            if (!st) return;
+            if (st.timer) { clearInterval(st.timer); st.timer = null; }
+            if (st.stream) { st.stream.getTracks().forEach(function(t) { t.stop(); }); st.stream = null; }
+            st.recorder = null;
+            st.chunks = [];
+            st.seconds = 0;
+        }
+
+        // إعادة واجهة الإدخال إلى وضعها الطبيعي بعد التسجيل
+        function _resetVoiceUI(chatType) {
+            const indicator = document.getElementById(chatType + 'VoiceRecordIndicator');
+            const micBtn = document.getElementById(chatType + 'VoiceBtn');
+            const timeEl = document.getElementById(chatType + 'VoiceRecordTime');
+            // دعم حالة عدم وجود footer بـ id (دردشة الدعم ليس لها id على الـ footer)
+            const footers = document.querySelectorAll('.chat-input-footer');
+            if (indicator) indicator.classList.add('d-none');
+            if (micBtn) micBtn.classList.remove('recording');
+            if (timeEl) timeEl.textContent = '0:00';
+            footers.forEach(function(f) { f.classList.remove('recording'); });
+        }
+
+        // إرسال الرسالة الصوتية فعلياً إلى القناة المناسبة
+        function _sendVoiceMessage(chatType, audioUrl, duration) {
+            if (!currentUser) return;
+            const durationStr = _formatVoiceDuration(duration);
+            if (chatType === 'support') {
+                if (activeSupportChatMemberId === null) return;
+                const chats = getAdminChats();
+                const chat = chats.find(c => c.memberId === activeSupportChatMemberId) ||
+                    (() => { const c = { id: chats.length > 0 ? Math.max(...chats.map(x => x.id)) + 1 : 1, memberId: activeSupportChatMemberId, messages: [] }; chats.push(c); return c; })();
+                chat.messages.push({
+                    senderRole: currentUser.isAdmin ? 'admin' : 'member',
+                    senderId: currentUser.id,
+                    senderName: currentUser.fullName,
+                    type: 'voice',
+                    audioUrl: audioUrl,
+                    duration: durationStr,
+                    timestamp: new Date().toISOString(),
+                    seenByAdmin: currentUser.isAdmin ? true : false,
+                    seenByMember: currentUser.isAdmin ? false : true
+                });
+                saveAdminChats(chats);
+                renderSupportChatThread();
+                if (currentUser.isAdmin) sendPushToUser(activeSupportChatMemberId, '🎤 رسالة صوتية من الإدارة', 'لديك رسالة صوتية جديدة في محادثة الدعم', { type: 'supportChat', url: './index.html' });
+                else sendPushToAdmins('🎤 رسالة صوتية جديدة', 'رسالة صوتية من ' + (currentUser.fullName || ''), { type: 'supportChat', url: './index.html' });
+            } else if (chatType === 'direct') {
+                if (activeDirectChatId === null || currentUser.isAdmin) return;
+                const chats = getDirectChats();
+                const chat = chats.find(c => c.id === activeDirectChatId);
+                if (!chat) return;
+                if (hasReportBetween(chat.userAId, chat.userBId) || hasCutoffBetween(chat.userAId, chat.userBId)) {
+                    showAlert('لا يمكن إرسال رسائل جديدة، تم إيقاف التواصل بين الطرفين.', 'danger');
+                    return;
+                }
+                chat.messages.push({ senderId: currentUser.id, type: 'voice', audioUrl: audioUrl, duration: durationStr, timestamp: new Date().toISOString() });
+                if (chat.messages.length > 50) chat.messages = chat.messages.slice(-50);
+                saveDirectChats(chats);
+                renderDirectChatThread();
+                const otherId = chat.userAId === currentUser.id ? chat.userBId : chat.userAId;
+                sendPushToUser(otherId, '🎤 رسالة صوتية', 'رسالة صوتية من ' + (currentUser.profileNumber || currentUser.fullName), { type: 'directChat', url: './index.html' });
+            }
+        }
 
         // ==================== أدوات شريط الدردشة المباشرة ====================
         let _chatToolbarOtherUserId = null;
@@ -3958,6 +4244,9 @@ body.dark-mode .id-verification-section {
                         playNotificationSound();
                     }
                     _lastOpenDirectChatMsgCount = msgCount;
+                    // تعليم الرسائل الواردة الجديدة كمقروءة أثناء فتح النافذة، حتى لا تُولِّد
+                    // إشعارات قديمة تتكرر بعد إغلاق المحادثة
+                    if (!activeDirectChatReadOnly) markDirectChatSeen(activeDirectChatId);
                 }
                 renderDirectChatThread();
             }
@@ -5923,26 +6212,103 @@ body.dark-mode .id-verification-section {
             localStorage.setItem('rawaaNotifCleared_' + currentUser.id, JSON.stringify(Array.from(set)));
         }
 
+        // تعليم مصدر الإشعارات (رسائل الدعم والمحادثات المباشرة) كمقروء فعلياً في قاعدة
+        // البيانات، وليس مجرد إخفائها من القائمة. هذا هو الإصلاح الجوهري لمشكلة "الإشعارات
+        // القديمة تتجدد بلا توقف": سابقاً كان المسح يُضيف المفتاح فقط إلى clearedSet، فتبقى
+        // الرسائل غير المقروءة في الدردشة، ويُولِّد منشئ الإشعارات إشعاراً بنفس المفتاح
+        // (أو بمفتاح مختلف قليلاً) عند كل تحديث للبيانات، فيعود الإشعار القديم. الآن نحل
+        // المشكلة من جذورها بتعليم الرسائل كمقروءة فعلاً.
+        // ملاحظة: لا نُحلّل المفتاح لاستخراج معرّف المحادثة (لأن الطابع الزمني يحتوي على
+        // شرطات '-')، بل نُعيد بناء المفتاح المتوقع لكل محادثة ونقارنه بمجموعة المفاتيح.
+        function resolveNotifSources(keyPredicate) {
+            if (!currentUser) return;
+            const keysToResolve = new Set(Object.keys(_lastNotifsMap).filter(keyPredicate || (() => true)));
+            if (keysToResolve.size === 0) return;
+
+            // رسائل دعم (للإدارة): تعليم كل رسائل الأعضاء كمقروءة للإدارة
+            if (currentUser.isAdmin) {
+                const adminChats = getAdminChats();
+                let adminChanged = false;
+                adminChats.forEach(c => {
+                    const unreadMsgs = (c.messages || []).filter(m => m.senderRole === 'member' && !m.seenByAdmin);
+                    if (unreadMsgs.length > 0) {
+                        const lastUnreadTs = (unreadMsgs[unreadMsgs.length - 1].timestamp || '').toString();
+                        const expectedKey = `supportchat-${c.id}-${lastUnreadTs}`;
+                        if (keysToResolve.has(expectedKey)) {
+                            unreadMsgs.forEach(m => { m.seenByAdmin = true; adminChanged = true; });
+                        }
+                    }
+                });
+                if (adminChanged) saveAdminChats(adminChats);
+            }
+
+            // رسائل دعم (للعضو): تعليم ردود الإدارة كمقروءة للعضو
+            if (!currentUser.isAdmin) {
+                const myChat = findAdminChatForMember(currentUser.id);
+                if (myChat) {
+                    const unreadMsgs = (myChat.messages || []).filter(m => m.senderRole === 'admin' && !m.seenByMember);
+                    if (unreadMsgs.length > 0) {
+                        const lastUnreadTs = (unreadMsgs[unreadMsgs.length - 1].timestamp || '').toString();
+                        const expectedKey = `mysupportchat-${lastUnreadTs}`;
+                        if (keysToResolve.has(expectedKey)) {
+                            const chats = getAdminChats();
+                            const chat = chats.find(c => c.id === myChat.id);
+                            let changed = false;
+                            if (chat) {
+                                (chat.messages || []).forEach(m => {
+                                    if (m.senderRole === 'admin' && !m.seenByMember) { m.seenByMember = true; changed = true; }
+                                });
+                            }
+                            if (changed) saveAdminChats(chats);
+                        }
+                    }
+                }
+            }
+
+            // محادثات مباشرة: تعليم رسائل الطرف الآخر كمقروءة
+            const directChats = getDirectChats();
+            let directChanged = false;
+            directChats.forEach(c => {
+                if (c.userAId !== currentUser.id && c.userBId !== currentUser.id) return;
+                const unreadMsgs = (c.messages || []).filter(m => m.senderId !== currentUser.id && !m.seenBy);
+                if (unreadMsgs.length > 0) {
+                    const lastUnreadTs = (unreadMsgs[unreadMsgs.length - 1].timestamp || '').toString();
+                    const expectedKey = `directchat-${c.id}-${lastUnreadTs}`;
+                    if (keysToResolve.has(expectedKey)) {
+                        unreadMsgs.forEach(m => { m.seenBy = true; directChanged = true; });
+                    }
+                }
+            });
+            if (directChanged) saveDirectChats(directChats);
+        }
+
         window.clearReadNotifications = function(e) {
             if (e) e.stopPropagation();
             const seen = getNotifSeenSet();
             const cleared = getNotifClearedSet();
             // نُضيف مفاتيح الإشعارات المقروءة الحالية إلى مجموعة "الممسوحة"، فتُخفى من القائمة.
             // ولا نُضيف غير المقروءة كي لا نُخفي شيئاً لم يطّلع عليه المستخدم بعد.
-            Object.keys(_lastNotifsMap).forEach(k => { if (seen.has(k)) cleared.add(k); });
+            const readKeys = Object.keys(_lastNotifsMap).filter(k => seen.has(k));
+            readKeys.forEach(k => cleared.add(k));
             saveNotifClearedSet(cleared);
+            // حلّ مصدر الإشعارات المقروءة (تعليم الرسائل كمقروءة فعلاً) حتى لا تتجدد
+            resolveNotifSources(k => seen.has(k));
             renderNotifications();
         };
 
         // مسح كل الإشعارات الظاهرة حالياً (المقروءة وغير المقروءة) من القائمة. مفيد عندما
-        // يريد المستخدم تصفير قائمة الإشعارات دون الحاجة لقراءتها واحدة واحدة. لاحظ أن هذا
-        // يُخفي الإشعار من القائمة فقط؛ فإذا وصلت رسالة جديدة فعلاً (بطابع زمني جديد) سيظهر
-        // إشعار جديد تحت مفتاح مختلف، وهو السلوك الصحيح.
+        // يريد المستخدم تصفير قائمة الإشعارات. الآن لا نُخفيها من القائمة فقط، بل نُعلِّم
+        // مصدرها (الرسائل غير المقروءة) كمقروء فعلاً، فلا تتجدد الإشعارات القديمة. لاحظ أن
+        // إشعارات الحالات (طلبات العضوية، طلبات الاهتمام...) تبقى محجوبة بمجموعة clearedSet
+        // لأن مفاتيحها ثابتة؛ وإذا تغيّر حالة الطلب فعلاً سيظهر إشعار جديد تحت مفتاح مختلف
+        // وهو السلوك الصحيح.
         window.clearAllNotifications = function(e) {
             if (e) e.stopPropagation();
             const cleared = getNotifClearedSet();
             Object.keys(_lastNotifsMap).forEach(k => { cleared.add(k); });
             saveNotifClearedSet(cleared);
+            // حلّ كل مصادر الإشعارات الحالية (تعليم الرسائل كمقروءة) حتى لا تتجدد
+            resolveNotifSources(() => true);
             renderNotifications();
         };
 
@@ -6121,20 +6487,26 @@ body.dark-mode .id-verification-section {
             }
 
             // إشعارات الرسائل الجديدة في المحادثات المباشرة مع أعضاء آخرين
-            // المفتاح يعتمد على الطابع الزمني لآخر رسالة (إن كانت من الطرف الآخر)، فيبقى
-            // ثابتاً ما لم تصل رسالة جديدة فعلاً، فلا يُبعث إشعار قُرئ أو مُسح تحت مفتاح جديد.
+            // ملاحظة جوهرية: لا نُولِّد إشعاراً إلا إذا كانت هناك رسائل غير مقروءة فعلاً
+            // (m.seenBy !== true) من الطرف الآخر. سابقاً كان الكود يتحقق فقط من أن آخر
+            // رسالة من الطرف الآخر — دون فحص seenBy — فكان يُولِّد إشعاراً عند كل تحديث
+            // للبيانات حتى بعد قراءة الرسالة، فيشعر المستخدم أن الإشعارات القديمة "تتجدد
+            // بلا توقف". الآن المفتاح يعتمد على الطابع الزمني لآخر رسالة غير مقروءة، فيبقى
+            // ثابتاً ما لم تصل رسالة جديدة فعلاً، ولا يُولَّد إشعار أصلاً بمجرد قراءة الرسائل.
             getDirectChats().filter(c => c.userAId === currentUser.id || c.userBId === currentUser.id).forEach(c => {
                 const otherId = c.userAId === currentUser.id ? c.userBId : c.userAId;
                 const msgs = c.messages || [];
-                const lastMsg = msgs[msgs.length - 1];
-                if (lastMsg && lastMsg.senderId !== currentUser.id) {
+                const unreadMsgs = msgs.filter(m => m.senderId !== currentUser.id && !m.seenBy);
+                if (unreadMsgs.length > 0) {
+                    const lastUnread = unreadMsgs[unreadMsgs.length - 1];
+                    const lastUnreadTs = (lastUnread.timestamp || '').toString();
                     const otherUser = users.find(u => u.id === otherId);
                     notifs.push({
-                        key: `directchat-${c.id}-${(lastMsg.timestamp || '').toString()}`,
+                        key: `directchat-${c.id}-${lastUnreadTs}`,
                         icon: 'fa-comments',
                         color: 'text-success',
                         title: '💬 رسالة جديدة',
-                        text: `رسالة جديدة من العضو ${escapeHtml(otherUser ? otherUser.profileNumber : '؟')}`,
+                        text: `لديك ${unreadMsgs.length} رسالة غير مقروءة من العضو ${escapeHtml(otherUser ? otherUser.profileNumber : '؟')}`,
                         nav: () => { openDirectChat(otherId, c.requestId); }
                     });
                 }
@@ -7808,11 +8180,15 @@ body.dark-mode .id-verification-section {
 
         document.getElementById('supportChatModal').addEventListener('hidden.bs.modal', function() {
             activeSupportChatMemberId = null;
+            // إيقاف أي تسجيل صوتي جارٍ عند إغلاق نافذة الدردشة
+            if (window.cancelVoiceRecord) cancelVoiceRecord('support');
         });
         document.getElementById('directChatModal').addEventListener('hidden.bs.modal', function() {
             activeDirectChatId = null;
             activeDirectChatReadOnly = false;
             _lastOpenDirectChatMsgCount = null;
+            // إيقاف أي تسجيل صوتي جارٍ عند إغلاق نافذة الدردشة
+            if (window.cancelVoiceRecord) cancelVoiceRecord('direct');
         });
 
         // ==================================================================================
@@ -7823,12 +8199,12 @@ body.dark-mode .id-verification-section {
         //               idVerificationRejectReason
         const CLOUDINARY_ID_UPLOAD_PRESET = 'Rawa9img'; // نفس الـ preset المعمول به للصور العامة
 
-        // شارة "موثّق" الذهبية الملكية (Task 24) — تظهر في 5 مواقع
+        // شارة التوثيق الذهبية الملكية (Task 24) — تظهر في 5 مواقع
+        // (تم حذف كلمة "موثّق" والاكتفاء بشارة أيقونة علامة الصح)
         function verifiedBadgeHtml(user) {
             if (!user || user.idVerificationStatus !== 'approved') return '';
             return `<span class="verified-badge" title="هوية مُوثّقة من الإدارة">
                 <i class="fa-solid fa-check"></i>
-                <span class="verified-text">موثّق</span>
             </span>`;
         }
 
@@ -7908,7 +8284,7 @@ body.dark-mode .id-verification-section {
             let badgeClass = 'badge bg-secondary p-2 ';
             let badgeText = 'غير مطلوب';
             if (status === 'pending') { badgeClass = 'badge id-status-badge-pending p-2'; badgeText = 'قيد المراجعة'; }
-            else if (status === 'approved') { badgeClass = 'badge id-status-badge-approved p-2'; badgeText = 'موثّق ✓'; }
+            else if (status === 'approved') { badgeClass = 'badge id-status-badge-approved p-2'; badgeText = '✓'; }
             else if (status === 'rejected') { badgeClass = 'badge id-status-badge-rejected p-2'; badgeText = 'مرفوض'; }
             badge.className = badgeClass;
             badge.textContent = badgeText;
@@ -7922,7 +8298,7 @@ body.dark-mode .id-verification-section {
             }
             if (statusText) {
                 if (status === 'pending') statusText.innerHTML = '<span class="text-warning"><i class="fa-solid fa-hourglass-half"></i> طلبك قيد المراجعة من قبل الإدارة.</span>';
-                else if (status === 'approved') statusText.innerHTML = '<span class="text-success"><i class="fa-solid fa-circle-check"></i> تم قبول توثيقك، الآن تظهر شارة "موثّق" على ملفك.</span>';
+                else if (status === 'approved') statusText.innerHTML = '<span class="text-success"><i class="fa-solid fa-circle-check"></i> تم قبول توثيقك، الآن تظهر شارة التوثيق على ملفك.</span>';
                 else if (status === 'rejected') statusText.innerHTML = `<span class="text-danger"><i class="fa-solid fa-circle-xmark"></i> تم رفض طلبك. السبب: ${escapeHtml(me.idVerificationRejectReason || 'غير محدد')}</span> <button type="button" class="btn btn-sm btn-outline-warning ms-2" onclick="document.getElementById('profile-id-image-input').value=''; uploadIdImage();">إعادة الرفع</button>`;
                 else statusText.innerHTML = '';
             }
