@@ -8723,18 +8723,39 @@ body.dark-mode .id-verification-section {
         };
 
         window.openUmamiStatsModal = async function() {
+            const w = window;
+            let url = '';
             try {
-                const url = await _resolveUmamiShareUrl();
-                if (!url) { showAlert('لم يُحفظ رابط مشاركة Umami بعد.', 'warning'); return; }
+                url = await _resolveUmamiShareUrl();
+            } catch (e) {
+                console.error('[Umami] resolve share url error:', e);
+                url = DEFAULT_UMAMI_SHARE_URL; // احتياطي نهائي
+            }
+            if (!url) { showAlert('لم يُحفظ رابط مشاركة Umami بعد.', 'warning'); return; }
+
+            // نضبط رابط "فتح في تبويب" دائماً حتى لو فشل عرض الإطار الداخلي
+            const link = document.getElementById('umami-stats-open-link');
+            if (link) { link.href = url; link.setAttribute('target', '_blank'); link.setAttribute('rel', 'noopener'); }
+
+            // محاولة فتح النافذة المنبثقة بشكل متين
+            try {
+                const modalEl = document.getElementById('umamiStatsModal');
                 const frame = document.getElementById('umami-stats-frame');
-                const link = document.getElementById('umami-stats-open-link');
-                if (frame) frame.src = url;
-                if (link) link.href = url;
-                new bootstrap.Modal(document.getElementById('umamiStatsModal')).show();
+                if (modalEl && w.bootstrap && w.bootstrap.Modal) {
+                    if (frame) { frame.src = url; }
+                    // getOrCreateInstance آمنة: تعيد استخدام النسخة الموجودة بدل إنشاء نسخة مكرّرة
+                    const inst = w.bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: true });
+                    inst.show();
+                    return; // نجاح
+                }
             } catch (e) {
                 console.error('[Umami] open modal error:', e);
-                showAlert('تعذّر فتح نافذة الإحصائيات.', 'danger');
             }
+            //fallback
+            // إذا تعذّر فتح النافذة المنبثقة نفتح رابط الإحصائيات في تبويب جديد مباشرةً
+            console.warn('[Umami] modal open failed — opening stats in new tab as fallback.');
+            try { w.open(url, '_blank', 'noopener'); } catch (oe) { console.error('[Umami] window.open failed:', oe); }
+            showAlert('تم فتح الإحصائيات في تبويب جديد.', 'info');
         };
 
         // ==================================================================================
