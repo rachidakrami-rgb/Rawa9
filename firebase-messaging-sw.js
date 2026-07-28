@@ -57,6 +57,13 @@ self.addEventListener('activate', (event) => {
 // — ملفات CDN (CSS/JS خارجية): cache-first (سريع، يُحدَّث عند تغيير الإصدار)
 // — ملفات المحلية (HTML): network-first (يُفضّل الأحدث)
 self.addEventListener('fetch', (event) => {
+    // تجاهل أي طلب ليس GET (مثل POST لإرسال أكواد التحقق) — Cache API لا يدعم
+    // تخزين طلبات POST، ولا داعي أصلاً لتخزين طلبات كهذه مؤقتاً. نتركها تمر
+    // للشبكة مباشرة بشكل طبيعي دون أي تدخل من الـ Service Worker.
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
     const url = new URL(event.request.url);
 
     // طلبات Firebase/Firestore: لا تخزّن مؤقتاً
