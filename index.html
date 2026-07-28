@@ -25,13 +25,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <!--
-        ==================== إحصائيات Umami (تحميل ديناميكي) ====================
-        ملاحظة هامة: لا يُضمَّن سكربت Umami هنا بشكل ثابت في <head>. بدلاً من ذلك
-        يُحمَّل ديناميكياً عبر دالة loadAnalyticsSettings() بعد قراءة معرّف الموقع
-        (umamiWebsiteId) من مستند Firestore settings/analytics. والسبب هو أن معرّف
-        الموقع قد يتغيّر من لوحة الإدارة دون إعادة نشر الموقع، فلا نريد تخزينه
-        كقيمة ثابتة داخل HTML. كذلك لا يُحمَّل السكربت إطلاقاً إن لم يُحدّد معرّف
-        موقع صالح بعد (تفادياً لطلب شبكة فاشل ل each visitor).
+        ==================== إحصائيات Umami (تحميل ديناميكي + معرّف افتراضي مُضمَّن) ====================
+        المعرّف الافتراضي المُضمَّن: DEFAULT_UMAMI_WEBSITE_ID = fa9106cb-0bae-4c52-83ad-fbb6921393f3
+        يُحمَّل سكربت Umami مباشرةً عند بدء الصفحة بهذا المعرّف الافتراضي حتى تعمل الإحصائيات
+        فوراً لكل زائر دون انتظار Firestore. بعدها تقرأ loadAnalyticsSettings() مستند
+        settings/analytics من Firestore؛ إن وُجد معرّف موقع آخر صالح محفوظ من لوحة
+        الإدارة يُستبدل السكربت به، وإلا بقي المعرّف الافتراضي قيد العمل.
         المصدر المُحقَّن: https://cloud.umami.is/script.js  بـ data-website-id="<UUID>"
         ==================================================================================
     -->
@@ -2196,10 +2195,10 @@ body.dark-mode .id-verification-section {
                         <div class="admin-section" id="tab-settings" style="display:none;">
                             <div class="dashboard-card mb-4">
                                 <h5 class="mb-3 font-weight-bold text-success"><i class="fa-solid fa-chart-line"></i> ربط منصة Umami للإحصائيات</h5>
-                                <p class="text-muted">قم بربط معرّف موقعك (Website ID) من لوحة Umami لتشغيل تتبّع زوار المنصة تلقائياً. يُحمَّل السكربت ديناميكياً بعد الحفظ ولا يحتاج إعادة نشر الموقع.</p>
+                                <p class="text-muted">تم ربط موقع Umami الجديد مسبقاً بمعرّف افتراضي، فتعمل الإحصائيات تلقائياً دون أي إعداد. يمكنك تجاوز المعرّف الافتراضي بلصق معرّف موقع آخر من لوحتك وحفظه.</p>
                                 <div class="d-flex align-items-center gap-2 mb-3">
                                     <span class="badge bg-secondary p-2">الحالة:</span>
-                                    <span id="umami-status-badge" class="badge bg-warning text-dark p-2">غير مُعد</span>
+                                    <span id="umami-status-badge" class="badge bg-success p-2">مُفعّل (افتراضي) ✓</span>
                                 </div>
                                 <div class="input-group mb-3" style="max-width:560px;">
                                     <span class="input-group-text"><i class="fa-solid fa-fingerprint"></i> Website ID</span>
@@ -2208,29 +2207,24 @@ body.dark-mode .id-verification-section {
                                 </div>
                                 <div id="umami-save-feedback" class="form-text"></div>
                                 <div class="d-flex flex-wrap gap-2 mt-3">
-                                    <a href="https://cloud.umami.is/websites" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-up-right-from-square"></i> فتح لوحة إحصائيات Umami</a>
+                                    <a href="https://cloud.umami.is/analytics/eu/websites" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm"><i class="fa-solid fa-up-right-from-square"></i> فتح لوحة إحصائيات Umami</a>
                                     <a href="https://cloud.umami.is/login" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول إلى Umami</a>
                                 </div>
                                 <div class="alert alert-info mt-3 small">
-                                    <strong><i class="fa-solid fa-circle-info"></i> خطوات الإعداد:</strong>
-                                    <ol class="mb-0 mt-1">
-                                        <li>سجّل دخولك إلى <a href="https://cloud.umami.is/login" target="_blank" rel="noopener">cloud.umami.is</a> وأنشئ موقعاً جديداً (Add Website) بعنوان هذا الموقع.</li>
-                                        <li>انسخ معرّف الموقع (Website ID) الظاهر في صفحة إعدادات الموقع.</li>
-                                        <li>الصق المعرّف في الحقل أعلاه واضغط "حفظ" — سيُحقن السكربت تلقائياً لكل الزوار.</li>
-                                        <li>لعرض الإحصائيات داخل هذه المنصة مباشرة، استخدم القسم التالي بالأسفل (رابط مشاركة Umami).</li>
-                                    </ol>
+                                    <strong><i class="fa-solid fa-circle-info"></i> ملاحظة:</strong>
+                                    <span class="d-block mt-1">المعرّف الافتراضي الحالي مُضمَّن داخل الكود ويعمل فوراً لكل زائر. إن أردت تغييره فقط الصق المعرّف الجديد في الحقل أعلاه واضغط "حفظ". لعرض الإحصائيات داخل المنصة مباشرة استخدم رابط المشاركة (Share URL) من قسم Umami بالأسفل.</span>
                                 </div>
                             </div>
                             <div class="dashboard-card">
                                 <h5 class="mb-3 font-weight-bold text-primary"><i class="fa-solid fa-eye"></i> عرض الإحصائيات داخل المنصة</h5>
-                                <p class="text-muted">استخدم رابط المشاركة العامة (Share URL) من Umami لعرض لوحة الإحصائيات داخل نافذة منبثقة هنا مباشرةً دون مغادرة المنصة.</p>
+                                <p class="text-muted">رابط المشاركة العامة (Share URL) من Umami مُضمَّن مسبقاً ويعمل تلقائياً. يمكنك استبداله برابط مشاركة آخر من لوحتك وحفظه.</p>
                                 <div class="input-group mb-3" style="max-width:680px;">
                                     <span class="input-group-text"><i class="fa-solid fa-link"></i> Share URL</span>
-                                    <input type="url" id="umami-share-url-input" class="form-control" placeholder="https://cloud.umami.is/share/xxxxxxxxxxxx/yyyyyyyyyyyy" dir="ltr">
+                                    <input type="url" id="umami-share-url-input" class="form-control" placeholder="https://cloud.umami.is/share/xxxxxxxxxxxx/yyyyyyyyyyyy" dir="ltr" value="https://cloud.umami.is/share/9I7GZ0eacZcXSQ7W">
                                     <button type="button" class="btn btn-success" id="umami-share-save-btn" onclick="saveAnalyticsShareUrl()"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
                                 </div>
                                 <div id="umami-share-feedback" class="form-text"></div>
-                                <button type="button" class="btn btn-brand mt-3" id="umami-view-stats-btn" onclick="openUmamiStatsModal()" disabled><i class="fa-solid fa-chart-bar"></i> عرض الإحصائيات الآن</button>
+                                <button type="button" class="btn btn-brand mt-3" id="umami-view-stats-btn" onclick="openUmamiStatsModal()"><i class="fa-solid fa-chart-bar"></i> عرض الإحصائيات الآن</button>
                             </div>
                         </div>
                     </div>
@@ -4809,6 +4803,8 @@ body.dark-mode .id-verification-section {
                     localStorage.setItem('rawaaAdminLastView', 'view-admin');
                 }
             }
+            // إيقاف التحديث الدوري للإحصائيات عند مغادرة لوحة تحكم المسؤول
+            if (viewId !== 'view-admin') { _stopStatsAutoRefresh(); }
             renderUI();
             if (viewId === 'view-profile' && currentUser && !currentUser.isAdmin) { loadProfilePicture(); }
             if (viewId === 'view-suggestions' && currentUser && !currentUser.isAdmin) { renderSuggestionsPage(); }
@@ -4989,6 +4985,7 @@ body.dark-mode .id-verification-section {
             if (pillId === 'tab-members') renderMembersPillTables();
             // تحديث الإحصائيات
             if (pillId === 'tab-stats') loadStatistics();
+            else _stopStatsAutoRefresh(); // إيقاف التحديث الدوري عند مغادرة تبويب الإحصائيات
             // تحديث المحادثات
             if (pillId === 'tab-chats') renderChatUI();
             // (Task 25.1) تحديث جداول طلبات التوثيق
@@ -6771,6 +6768,7 @@ body.dark-mode .id-verification-section {
             localStorage.removeItem('rawaaMemberLastView');
             showAlert('تم تسجيل الخروج من البوابة.', 'success');
             switchView('view-login');
+            _stopStatsAutoRefresh(); // إيقاف التحديث الدوري للإحصائيات عند الخروج
             statsCache = null;
             renderNotifications();
         };
@@ -7833,15 +7831,54 @@ body.dark-mode .id-verification-section {
                     `;
             }).join('');
         }
+        // ==================== التحديث الدوري للإحصائيات (Task 36) ====================
+        // كان statsCache يُملأ مرة واحدة ولا يُحدَّث بعدها، فتبقى الأرقام القديمة عالقة
+        // (مثلاً "2 طلبات معلقة" رغم أن لا طلبات معلقة فعلياً). الآن:
+        // (1) نُبطِل الكاش ونُجلب أحدث البيانات من الخادم عند كل فتح للتبويب.
+        // (2) نُعيد الحساب دورياً كل 30 ثانية طالما التبويب نشط.
+        let _statsAutoRefreshTimer = null;
+        const STATS_AUTO_REFRESH_MS = 30000; // كل 30 ثانية
+
+        function _stopStatsAutoRefresh() {
+            if (_statsAutoRefreshTimer) { clearInterval(_statsAutoRefreshTimer); _statsAutoRefreshTimer = null; }
+        }
+
+        async function _refreshStatsData() {
+            statsCache = null;
+            try {
+                await Promise.all([
+                    refreshCollection('requests'),
+                    refreshCollection('cutoffs'),
+                    refreshCollection('reports')
+                ]);
+            } catch (e) { /* نحسب بما هو متاح محلياً */ }
+        }
+
+        function _startStatsAutoRefresh() {
+            _stopStatsAutoRefresh();
+            _statsAutoRefreshTimer = setInterval(async () => {
+                // إن لم يعد تبويب الإحصائيات نشطاً نوقف المؤقّت
+                if (activeAdminTab !== 'tab-stats') { _stopStatsAutoRefresh(); return; }
+                // إعادة الحساب بصمت (دون شاشة التحميل) بأحدث البيانات
+                await _refreshStatsData();
+                calculateStatistics();
+                console.log('[Stats] auto-refresh: numbers re-verified');
+            }, STATS_AUTO_REFRESH_MS);
+        }
+
         async function loadStatistics() {
             const loading = document.getElementById('stats-loading');
             const content = document.getElementById('stats-content');
-            loading.style.display = 'block';
-            content.style.display = 'none';
+            if (loading) loading.style.display = 'block';
+            if (content) content.style.display = 'none';
+            // إبطال الكاش القديم + جلب أحدث البيانات قبل الحساب
+            await _refreshStatsData();
             setTimeout(() => {
                 calculateStatistics();
-                loading.style.display = 'none';
-                content.style.display = 'block';
+                if (loading) loading.style.display = 'none';
+                if (content) content.style.display = 'block';
+                // تفعيل التحديث الدوري طالما تبويب الإحصائيات نشط
+                _startStatsAutoRefresh();
             }, 100);
         }
 
@@ -8511,58 +8548,111 @@ body.dark-mode .id-verification-section {
         // ==================================================================================
         const UMAMI_SCRIPT_ID = 'umami-analytics-script';
         const UMAMI_UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        // المعرّف الافتراضي المُضمَّن (موقع Umami الجديد المرتبط) — يُستخدم فوراً عند بدء
+        // التحميل وقبل توفّر Firestore، ويبقى سارياً ما لم يتجاوزه المسؤول من اللوحة.
+        const DEFAULT_UMAMI_WEBSITE_ID = 'fa9106cb-0bae-4c52-83ad-fbb6921393f3';
+        // رابط المشاركة العامة الافتراضي المُضمَّن — يُستخدم لعرض الإحصائيات داخل المنصة.
+        const DEFAULT_UMAMI_SHARE_URL = 'https://cloud.umami.is/share/9I7GZ0eacZcXSQ7W';
+        // مفاتيح التخزين المحلي لتجاوزات المسؤول (احتياط في حال تعطّل صلاحيات Firestore)
+        const UMAMI_WID_LS_KEY = 'mithaq_umami_website_id_override';
+        const UMAMI_SHARE_LS_KEY = 'mithaq_umami_share_url_override';
+        let _umamiCurrentWebsiteId = null; // يتتبّع آخر معرّف تم حقنه فعلياً (لتفادي الحقن المكرّر)
+
+        // حقن سكربت Umami بمعرّف موقع معيّن (مع إزالة أي سكربت سابق)
+        function _injectUmamiScript(wid) {
+            if (!wid || !UMAMI_UUID_REGEX.test(wid)) return;
+            if (_umamiCurrentWebsiteId === wid) return; // الحقن الحالي مماثل → لا داعي
+            const old = document.getElementById(UMAMI_SCRIPT_ID);
+            if (old) old.remove();
+            const s = document.createElement('script');
+            s.id = UMAMI_SCRIPT_ID;
+            s.async = true;
+            s.src = 'https://cloud.umami.is/script.js';
+            s.setAttribute('data-website-id', wid);
+            document.head.appendChild(s);
+            _umamiCurrentWebsiteId = wid;
+            console.log('[Umami] script injected for website:', wid);
+        }
+
+        // حقن فوري بالمعرّف الافتراضي قبل انتظار Firestore حتى لا تُفقد أي زيارة
+        _injectUmamiScript(DEFAULT_UMAMI_WEBSITE_ID);
 
         // يُستدعى من BOTH Firebase init paths لحقن السكربت ديناميكياً
         window.loadAnalyticsSettings = async function() {
+            // الأولوية للمسؤول (تجاوز محلي) ثم Firestore ثم الافتراضي
+            const lsOverride = (localStorage.getItem(UMAMI_WID_LS_KEY) || '').trim();
+            const effectiveWid = (lsOverride && UMAMI_UUID_REGEX.test(lsOverride)) ? lsOverride : DEFAULT_UMAMI_WEBSITE_ID;
+            // نضمن الحقن الافتراضي فوراً حتى قبل القراءة من Firestore
+            _injectUmamiScript(effectiveWid);
             try {
                 const doc = await db.collection('settings').doc('analytics').get({ source: 'server' });
                 const data = doc.exists ? (doc.data() || {}) : {};
-                // إزالة أي سكربت قديم قبل الحقن من جديد
-                const old = document.getElementById(UMAMI_SCRIPT_ID);
-                if (old) old.remove();
                 const wid = data.umamiWebsiteId || '';
                 if (wid && UMAMI_UUID_REGEX.test(wid)) {
-                    const s = document.createElement('script');
-                    s.id = UMAMI_SCRIPT_ID;
-                    s.async = true;
-                    s.src = 'https://cloud.umami.is/script.js';
-                    s.setAttribute('data-website-id', wid);
-                    document.head.appendChild(s);
-                    console.log('[Umami] script injected for website:', wid);
+                    // المسؤول حفظ معرّفاً مختلفاً في Firestore → نستبدل به
+                    _injectUmamiScript(wid);
+                } else {
+                    // لا يوجد تجاوز من المسؤول → نضمن عمل المعرّف الفعّال (محلي أو افتراضي)
+                    _injectUmamiScript(effectiveWid);
                 }
             } catch (e) {
                 console.error('[Umami] loadAnalyticsSettings error:', e);
+                // عند أي خطأ (مثل رفض صلاحيات Firestore) يبقى المعرّف الفعّال قيد العمل
+                _injectUmamiScript(effectiveWid);
             }
         };
+
+        // يُرجع رابط المشاركة الفعّال: تجاوز المسؤول (محلي) ← Firestore ← الافتراضي
+        async function _resolveUmamiShareUrl() {
+            const lsOverride = (localStorage.getItem(UMAMI_SHARE_LS_KEY) || '').trim();
+            if (lsOverride && lsOverride.startsWith('https://cloud.umami.is/share/')) {
+                return lsOverride;
+            }
+            try {
+                const doc = await db.collection('settings').doc('analytics').get({ source: 'server' });
+                const data = doc.exists ? (doc.data() || {}) : {};
+                const share = (data.umamiShareUrl || '').trim();
+                if (share && share.startsWith('https://cloud.umami.is/share/')) return share;
+            } catch (e) { /* تجاهل — سنرجع للافتراضي */ }
+            return DEFAULT_UMAMI_SHARE_URL;
+        }
 
         window.renderSettingsTab = async function() {
             const inputEl = document.getElementById('umami-website-id-input');
             const statusBadge = document.getElementById('umami-status-badge');
             const shareInput = document.getElementById('umami-share-url-input');
             const viewBtn = document.getElementById('umami-view-stats-btn');
+            // قيمة رابط المشاركة الفعّالة (محلي ← افتراضي) قبل قراءة Firestore
+            const effectiveShare = (localStorage.getItem(UMAMI_SHARE_LS_KEY) || '').trim() || DEFAULT_UMAMI_SHARE_URL;
+            // معرّف الموقع الفعّال (محلي ← افتراضي) قبل قراءة Firestore
+            const lsWid = (localStorage.getItem(UMAMI_WID_LS_KEY) || '').trim();
+            const effectiveWid = (lsWid && UMAMI_UUID_REGEX.test(lsWid)) ? lsWid : DEFAULT_UMAMI_WEBSITE_ID;
+            // عرض أولي فوري بالقيم المحلية/الافتراضية
+            if (inputEl) inputEl.value = effectiveWid;
+            if (statusBadge) {
+                statusBadge.className = 'badge bg-success p-2';
+                statusBadge.textContent = 'مُفعّل ✓';
+            }
+            if (shareInput) shareInput.value = effectiveShare;
+            if (viewBtn) viewBtn.disabled = false;
             try {
                 const doc = await db.collection('settings').doc('analytics').get({ source: 'server' });
                 const data = doc.exists ? (doc.data() || {}) : {};
                 const wid = data.umamiWebsiteId || '';
                 const share = data.umamiShareUrl || '';
-                if (inputEl) inputEl.value = wid;
-                if (statusBadge) {
-                    if (wid && UMAMI_UUID_REGEX.test(wid)) {
-                        statusBadge.className = 'badge bg-success p-2';
-                        statusBadge.textContent = 'مُفعّل ✓';
-                    } else {
-                        statusBadge.className = 'badge bg-warning text-dark p-2';
-                        statusBadge.textContent = 'غير مُعد';
-                    }
+                // إن وُجد تجاوز في Firestore نعرضه (أسبقية للقراءة العرضية)
+                if (wid && UMAMI_UUID_REGEX.test(wid)) {
+                    if (inputEl) inputEl.value = wid;
+                    if (statusBadge) { statusBadge.className = 'badge bg-success p-2'; statusBadge.textContent = 'مُفعّل ✓'; }
+                } else {
+                    if (inputEl) inputEl.value = effectiveWid;
+                    if (statusBadge) { statusBadge.className = 'badge bg-success p-2'; statusBadge.textContent = 'مُفعّل ✓'; }
                 }
-                if (shareInput) shareInput.value = share;
-                if (viewBtn) viewBtn.disabled = !share;
+                if (shareInput) shareInput.value = share || effectiveShare;
+                if (viewBtn) viewBtn.disabled = false;
             } catch (e) {
                 console.error('[Umami] renderSettingsTab error:', e);
-                if (statusBadge) {
-                    statusBadge.className = 'badge bg-danger p-2';
-                    statusBadge.textContent = 'تعذّر التحميل';
-                }
+                // نُبقي القيم المحلية/الافتراضية المعروضة مسبقاً — لا داعي لإظهار خطأ
             }
         };
 
@@ -8578,17 +8668,26 @@ body.dark-mode .id-verification-section {
                 if (fb) { fb.textContent = 'صيغة المعرّف غير صحيحة، يجب أن يكون UUID صالح (مثال: 1a2b3c4d-5e6f-7890-abcd-ef1234567890).'; fb.className = 'form-text text-danger'; }
                 return;
             }
+            // 1) نحفظ محلياً دائماً ليعمل التجاوز حتى لو فشلت صلاحيات Firestore
+            try { localStorage.setItem(UMAMI_WID_LS_KEY, wid); } catch (lsErr) {}
+            // 2) نحاول Firestore (best-effort) — إن فشل لا نُظهر خطأ للمستخدم
+            let fsSaved = false;
             try {
                 await db.collection('settings').doc('analytics').set({ umamiWebsiteId: wid }, { merge: true });
-                if (fb) { fb.textContent = 'تم الحفظ بنجاح. سيُحقن سكربت Umami تلقائياً لكل الزوار.'; fb.className = 'form-text text-success'; }
-                showAlert('تم حفظ إعدادات Umami بنجاح.', 'success');
-                // إعادة الحقن فوراً بعد الحفظ
-                loadAnalyticsSettings();
-                renderSettingsTab();
+                fsSaved = true;
             } catch (e) {
-                console.error('[Umami] save error:', e);
-                if (fb) { fb.textContent = 'حدث خطأ أثناء الحفظ: ' + (e.message || e); fb.className = 'form-text text-danger'; }
+                console.warn('[Umami] Firestore save skipped (using local override):', e.message || e);
             }
+            if (fb) {
+                fb.textContent = fsSaved
+                    ? 'تم الحفظ بنجاح. سيُحقن سكربت Umami تلقائياً لكل الزوار.'
+                    : 'تم الحفظ محلياً (تعذّر الوصول إلى Firestore). السكربت سيُحقن بهذا المعرّف في هذا المتصفح.';
+                fb.className = 'form-text text-success';
+            }
+            showAlert('تم حفظ إعدادات Umami.', 'success');
+            // إعادة الحقن فوراً بعد الحفظ
+            _injectUmamiScript(wid);
+            renderSettingsTab();
         };
 
         window.saveAnalyticsShareUrl = async function() {
@@ -8603,22 +8702,29 @@ body.dark-mode .id-verification-section {
                 if (fb) { fb.textContent = 'الرابط غير صالح. يجب أن يبدأ بـ https://cloud.umami.is/share/'; fb.className = 'form-text text-danger'; }
                 return;
             }
+            // 1) نحفظ محلياً دائماً ليعمل التجاوز حتى لو فشلت صلاحيات Firestore
+            try { localStorage.setItem(UMAMI_SHARE_LS_KEY, url); } catch (lsErr) {}
+            // 2) نحاول Firestore (best-effort) — إن فشل لا نُظهر خطأ للمستخدم
+            let fsSaved = false;
             try {
                 await db.collection('settings').doc('analytics').set({ umamiShareUrl: url }, { merge: true });
-                if (fb) { fb.textContent = 'تم حفظ رابط المشاركة.'; fb.className = 'form-text text-success'; }
-                showAlert('تم حفظ رابط مشاركة Umami.', 'success');
-                renderSettingsTab();
+                fsSaved = true;
             } catch (e) {
-                console.error('[Umami] share save error:', e);
-                if (fb) { fb.textContent = 'حدث خطأ أثناء الحفظ: ' + (e.message || e); fb.className = 'form-text text-danger'; }
+                console.warn('[Umami] Firestore share-url save skipped (using local override):', e.message || e);
             }
+            if (fb) {
+                fb.textContent = fsSaved
+                    ? 'تم حفظ رابط المشاركة.'
+                    : 'تم الحفظ محلياً (تعذّر الوصول إلى Firestore). الرابط يعمل في هذا المتصفح.';
+                fb.className = 'form-text text-success';
+            }
+            showAlert('تم حفظ رابط مشاركة Umami.', 'success');
+            renderSettingsTab();
         };
 
         window.openUmamiStatsModal = async function() {
             try {
-                const doc = await db.collection('settings').doc('analytics').get({ source: 'server' });
-                const data = doc.exists ? (doc.data() || {}) : {};
-                const url = data.umamiShareUrl || '';
+                const url = await _resolveUmamiShareUrl();
                 if (!url) { showAlert('لم يُحفظ رابط مشاركة Umami بعد.', 'warning'); return; }
                 const frame = document.getElementById('umami-stats-frame');
                 const link = document.getElementById('umami-stats-open-link');
