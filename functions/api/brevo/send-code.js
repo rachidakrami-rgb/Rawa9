@@ -102,9 +102,10 @@ async function handleSendCode(request, env) {
       <td align="center">
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.06);">
           <tr>
-            <td style="background:linear-gradient(135deg,#ffd76e 0%,#b8860b 100%);padding:24px 32px;text-align:center;">
-              <div style="font-size:26px;font-weight:800;color:#3a2a00;letter-spacing:0.5px;">ميثاق</div>
-              <div style="font-size:13px;color:#5a4a00;margin-top:4px;">منصة ميثاق للربط الشرعي والآمن</div>
+            <td style="text-align:center;background-color:#333;padding:14px;">
+              <a style="text-decoration:none;outline:none;" href="https://meetha9.pages.dev" target="_blank">
+                <img src="https://meetha9.pages.dev/icons/icon-192.png" style="height:32px;vertical-align:middle;" height="32" alt="ميثاق" />
+              </a>
             </td>
           </tr>
           <tr>
