@@ -23,7 +23,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- EmailJS تمت إزالته — الآن نستخدم Brevo عبر API endpoint آمن من جهة الخادم: /api/brevo/send-code -->
     <!--
         ==================== إحصائيات Umami (تحميل ديناميكي + معرّف افتراضي مُضمَّن) ====================
         المعرّف الافتراضي المُضمَّن: DEFAULT_UMAMI_WEBSITE_ID = fa9106cb-0bae-4c52-83ad-fbb6921393f3
@@ -2457,18 +2457,26 @@ body.dark-mode .id-verification-section {
             window.loadAnalyticsSettings();
         }
 
-        // ==================== إعداد EmailJS (للتحقق من البريد الإلكتروني عبر كود) ====================
-        // ⚠️ يجب استبدال القيم الثلاث التالية ببياناتك الخاصة من حسابك على emailjs.com قبل التشغيل:
-        //   1) EMAILJS_PUBLIC_KEY  → Account > General > Public Key
-        //   2) EMAILJS_SERVICE_ID  → Email Services > (خدمتك، مثال: Gmail) > Service ID
-        //   3) EMAILJS_TEMPLATE_ID → Email Templates > (قالبك) > Template ID
-        // يجب أن يحوي القالب في emailjs.com متغيرين على الأقل: {{to_email}} و {{code}}
-        const EMAILJS_PUBLIC_KEY = 'ohb1ZoM3Hs5u88-oE';
-        const EMAILJS_SERVICE_ID = 'service_p0319ha';
-        const EMAILJS_TEMPLATE_ID = 'template_bwkrdxe';
-        const EMAILJS_RESET_TEMPLATE_ID = 'template_btb89en';
-        if (typeof emailjs !== 'undefined') {
-            emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+        // ==================== إرسال البريد عبر Brevo (من جهة الخادم) ====================
+        // تم الاستغناء عن EmailJS نهائياً. الآن نستخدم Brevo عبر API endpoint آمن:
+        //   POST /api/brevo/send-code  { email, code, type: 'verify' | 'reset' }
+        // مفتاح Brevo API يبقى في الخادم فقط (.env.local) ولا يُكشف للمتصفح أبداً.
+        // استخدم SEND_EMAIL_SUPPORTED كعلم (flag) لمعرفة إن كانت الخدمة جاهزة.
+        const SEND_EMAIL_SUPPORTED = true; // الخدمة مُفعّلة دائماً؛ يُتحقق منها فعلياً عند الطلب
+        async function sendVerificationEmailViaBrevo(email, code, type) {
+            // type: 'verify' (افتراضي) أو 'reset'
+            const res = await fetch('/api/brevo/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, code: String(code), type: type || 'verify' })
+            });
+            let data = null;
+            try { data = await res.json(); } catch (_) { /* ignore */ }
+            if (!res.ok || !data || data.success !== true) {
+                const msg = (data && data.error) || ('فشل الإرسال (HTTP ' + res.status + ')');
+                throw new Error(msg);
+            }
+            return true;
         }
 
         // ==================== إعداد إشعارات الدفع (Push Notifications / FCM) ====================
@@ -3226,7 +3234,7 @@ body.dark-mode .id-verification-section {
         };
 
 
-        // ==================== التحقق من البريد الإلكتروني عبر كود (EmailJS) عند التسجيل ====================
+        // ==================== التحقق من البريد الإلكتروني عبر كود (Brevo) عند التسجيل ====================
         function isValidEmailFormat(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
@@ -3254,7 +3262,7 @@ body.dark-mode .id-verification-section {
                 status.className = 'form-text text-danger';
                 return;
             }
-            if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
+            if (!SEND_EMAIL_SUPPORTED) {
                 status.textContent = 'خدمة إرسال البريد غير مُهيّأة بعد من طرف الإدارة.';
                 status.className = 'form-text text-danger';
                 return;
@@ -3274,14 +3282,14 @@ body.dark-mode .id-verification-section {
             status.textContent = 'جارٍ إرسال الكود...';
             status.className = 'form-text text-muted';
 
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, code: code }).then(() => {
+            sendVerificationEmailViaBrevo(email, code, 'verify').then(() => {
                 document.getElementById('reg-email-verify-row').classList.remove('d-none');
                 status.textContent = 'تم إرسال كود التحقق إلى بريدك، يرجى إدخاله أدناه (صالح لمدة 10 دقائق).';
                 status.className = 'form-text text-success';
                 startRegResendCooldown();
             }).catch(err => {
-                console.error('EmailJS error:', err);
-                status.textContent = 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
+                console.error('Brevo send error:', err);
+                status.textContent = err && err.message ? err.message : 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
                 status.className = 'form-text text-danger';
                 sendBtn.disabled = false;
             });
@@ -3356,7 +3364,7 @@ body.dark-mode .id-verification-section {
                 status.className = 'form-text text-danger';
                 return;
             }
-            if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
+            if (!SEND_EMAIL_SUPPORTED) {
                 status.textContent = 'خدمة إرسال البريد غير مُهيّأة بعد من طرف الإدارة.';
                 status.className = 'form-text text-danger';
                 return;
@@ -3377,15 +3385,15 @@ body.dark-mode .id-verification-section {
             status.textContent = 'جارٍ إرسال الكود...';
             status.className = 'form-text text-muted';
 
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, code: code })
+            sendVerificationEmailViaBrevo(email, code, 'verify')
                 .then(() => {
                     document.getElementById('profile-email-verify-row').classList.remove('d-none');
                     status.textContent = 'تم إرسال كود التحقق إلى بريدك، يرجى إدخاله أدناه (صالح لمدة 10 دقائق).';
                     status.className = 'form-text text-success';
                     startProfileResendCooldown();
                 }).catch(err => {
-                    console.error('EmailJS error:', err);
-                    status.textContent = 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
+                    console.error('Brevo send error:', err);
+                    status.textContent = err && err.message ? err.message : 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
                     status.className = 'form-text text-danger';
                     sendBtn.disabled = false;
                 });
@@ -3466,7 +3474,7 @@ body.dark-mode .id-verification-section {
                 status.className = 'form-text text-danger';
                 return;
             }
-            if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
+            if (!SEND_EMAIL_SUPPORTED) {
                 status.textContent = 'خدمة إرسال البريد غير مُهيّأة بعد.';
                 status.className = 'form-text text-danger';
                 return;
@@ -3487,15 +3495,15 @@ body.dark-mode .id-verification-section {
             status.textContent = 'جارٍ إرسال الكود...';
             status.className = 'form-text text-muted';
 
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: email, code: code })
+            sendVerificationEmailViaBrevo(email, code, 'verify')
                 .then(() => {
                     document.getElementById('admin-profile-email-verify-row').classList.remove('d-none');
                     status.textContent = 'تم إرسال كود التحقق إلى بريدك، يرجى إدخاله أدناه (صالح لمدة 10 دقائق).';
                     status.className = 'form-text text-success';
                     startAdminProfileResendCooldown();
                 }).catch(err => {
-                    console.error('EmailJS error:', err);
-                    status.textContent = 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
+                    console.error('Brevo send error:', err);
+                    status.textContent = err && err.message ? err.message : 'تعذّر إرسال كود التحقق، يرجى المحاولة لاحقاً.';
                     status.className = 'form-text text-danger';
                     sendBtn.disabled = false;
                 });
@@ -6956,14 +6964,33 @@ body.dark-mode .id-verification-section {
                 showAlert('تم إنشاء العضوية بنجاح! ملفك قيد التدقيق الإداري.', 'success');
             } catch (txErr) {
                 console.error('خطأ في معاملة التسجيل:', txErr);
-                if (txErr.message === 'DUPLICATE_USERNAME') {
+                if (txErr && txErr.message === 'DUPLICATE_USERNAME') {
                     showAlert('اسم المستخدم مسجل مسبقاً (تم تسجيله من متصفح آخر).', 'danger');
-                } else if (txErr.message === 'DUPLICATE_EMAIL') {
+                } else if (txErr && txErr.message === 'DUPLICATE_EMAIL') {
                     showAlert('البريد الإلكتروني مسجل بالفعل (تم تسجيله من متصفح آخر).', 'danger');
-                } else if (txErr.message === 'DUPLICATE_PHONE') {
+                } else if (txErr && txErr.message === 'DUPLICATE_PHONE') {
                     showAlert('رابط التواصل هذا مسجل بالفعل (تم تسجيله من متصفح آخر).', 'danger');
                 } else {
-                    showAlert('حدث خطأ أثناء حفظ العضوية في قاعدة البيانات. الرجاء المحاولة مجدداً.', 'danger');
+                    // عرض تفاصيل الخطأ الفعلية لمساعدة المستخدم/الإدارة على التشخيص
+                    let detail = '';
+                    if (txErr && txErr.message) {
+                        detail = ' (' + String(txErr.message).slice(0, 200) + ')';
+                    } else if (typeof txErr === 'string') {
+                        detail = ' (' + txErr.slice(0, 200) + ')';
+                    } else if (txErr && txErr.code) {
+                        detail = ' [code: ' + txErr.code + ']';
+                    }
+                    // تنبيه خاص بأخطاء صلاحيات Firestore الشائعة
+                    const msg = (txErr && txErr.message) ? String(txErr.message).toLowerCase() : '';
+                    if (msg.includes('permission-denied') || msg.includes('permission_denied') || (txErr && txErr.code === 'permission-denied')) {
+                        showAlert('تعذّر حفظ العضوية: لا تملك الصلاحية للكتابة في قاعدة البيانات. يرجى مراجعة إعدادات Firestore Rules.' + detail, 'danger');
+                    } else if (msg.includes('unavailable') || msg.includes('network') || (txErr && txErr.code === 'unavailable')) {
+                        showAlert('تعذّر حفظ العضوية: لا يمكن الوصول إلى قاعدة البيانات حالياً (مشكلة شبكة). يرجى التحقق من اتصالك بالإنترنت والمحاولة مجدداً.' + detail, 'danger');
+                    } else if (msg.includes('aborted') || (txErr && txErr.code === 'aborted')) {
+                        showAlert('تعذّر حفظ العضوية: تم إلغاء العملية بسبب تعديل متزامن. يرجى المحاولة مجدداً.' + detail, 'danger');
+                    } else {
+                        showAlert('حدث خطأ أثناء حفظ العضوية في قاعدة البيانات. الرجاء المحاولة مجدداً.' + detail, 'danger');
+                    }
                 }
                 return;
             }
@@ -7028,7 +7055,7 @@ body.dark-mode .id-verification-section {
             renderNotifications();
         };
 
-        // ==================== استعادة كلمة المرور الفورية عبر كود بريد (EmailJS) ====================
+        // ==================== استعادة كلمة المرور الفورية عبر كود بريد (Brevo) ====================
         window.onResetEmailChanged = function() {
             const current = document.getElementById('forgot-password-email').value.trim();
             if (resetPendingCode && current !== resetMatchedEmail) {
@@ -7049,7 +7076,7 @@ body.dark-mode .id-verification-section {
                 status.className = 'form-text text-danger';
                 return;
             }
-            if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
+            if (!SEND_EMAIL_SUPPORTED) {
                 status.textContent = 'خدمة إرسال البريد غير مُهيّأة بعد من طرف الإدارة.';
                 status.className = 'form-text text-danger';
                 return;
@@ -7075,15 +7102,15 @@ body.dark-mode .id-verification-section {
             status.textContent = 'جارٍ إرسال الرمز...';
             status.className = 'form-text text-muted';
 
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_RESET_TEMPLATE_ID, { to_email: email, code: code })
+            sendVerificationEmailViaBrevo(email, code, 'reset')
                 .then(() => {
                     document.getElementById('reset-password-fields-row').classList.remove('d-none');
                     status.textContent = 'تم إرسال رمز إعادة التعيين إلى بريدك (صالح لمدة 10 دقائق).';
                     status.className = 'form-text text-success';
                     startResetResendCooldown();
                 }).catch(err => {
-                    console.error('EmailJS error:', err);
-                    status.textContent = 'تعذّر إرسال رمز إعادة التعيين، يرجى المحاولة لاحقاً أو استخدام الطلب اليدوي أدناه.';
+                    console.error('Brevo send error:', err);
+                    status.textContent = err && err.message ? err.message : 'تعذّر إرسال رمز إعادة التعيين، يرجى المحاولة لاحقاً أو استخدام الطلب اليدوي أدناه.';
                     status.className = 'form-text text-danger';
                     sendBtn.disabled = false;
                 });
